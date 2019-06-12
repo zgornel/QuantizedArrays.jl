@@ -1,0 +1,7 @@
+name = "QuantizedArrays"
+uuid = "a7db621c-8ce0-11e9-16a1-0f86dc86bd10"
+authors = ["Corneliu Cofaru <cornel@oxoaresearch.com>"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
