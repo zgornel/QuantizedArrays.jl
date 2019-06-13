@@ -1,5 +1,17 @@
+__precompile__(true)
+
 module QuantizedArrays
 
-greet() = print("Hello World!")
+export QuantizedVector,
+       QuantizedMatrix,
+       QuantizedArray,
+       build_quantizer,
+       quantize,
+       quantizer,
+       codebook
+
+include("defaults.jl")
+include("quantize.jl")
+include("interface.jl")
 
 end # module
