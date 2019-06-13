@@ -17,10 +17,41 @@ Pkg.add("QuantizedArrays")
 
 
 ## TODO
- - basic interface for vectors, matrices (w. random codebook generation)
+~~ - basic interface for vectors, matrices (w. sampling quantization) ~~
+ - extend basic array interface
  - actual quantization (i.e. cluster sub-vectors w. PQ/OPQ/etc.)
+ - tests
+ - documetation
  - implement higher order tensor interface
 
+
+## Examples
+```julia
+using QuantizedArrays
+v = collect(1:10);
+qv = QuantizedArray(v, k=3)  # 3 quantization levels
+# 10-element QuantizedArray{UInt8,Int64,1}:
+#  2
+#  2
+#  2
+#  2
+#  6
+#  6
+#  6
+#  9
+#  9
+#  9
+
+m = reshape(collect(1:24), (6,4))
+qm = QuantizedArray(m, k = 2, m = 3)  # 2 vectors, 3 codebooks
+# 6×4 QuantizedArray{UInt8,Int64,2}:
+#   1   1  13  13
+#   2   2  14  14
+#   9   9  15  15
+#  10  10  16  16
+#  11  11  17  17
+#  12  12  18  18
+```
 
 ## Features
 To keep track with the latest features, please consult [NEWS.md](https://github.com/zgornel/QuantizedArrays.jl/blob/master/NEWS.md) and the [documentation](https://zgornel.github.io/QuantizedArrays.jl/dev).
