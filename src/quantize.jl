@@ -1,13 +1,13 @@
 #TODO(Corneliu)
 
-struct ArrayQuantizer{I,T,N}
+struct ArrayQuantizer{U,T,N}
     dims::NTuple{N, Int}                    # original array size
-    codebook::Vector{Dict{I, Vector{T}}}    # codes
+    codebook::Vector{Dict{U, Vector{T}}}    # codes
     k::Int                                  # number of codes/quantizer
 end
 
-codebook(aq::ArrayQuantizer{I,T,1}) where {I,T} = aq.codebook[1]
-codebook(aq::ArrayQuantizer{I,T,2}) where {I,T} = aq.codebook
+codebook(aq::ArrayQuantizer{U,T,1}) where {U,T} = aq.codebook[1]
+codebook(aq::ArrayQuantizer{U,T,2}) where {U,T} = aq.codebook
 
 
 # Quantizer building methods
@@ -26,10 +26,10 @@ function build_quantizer(aa::AbstractArray{T,N};
 end
 
 # show methods
-Base.show(io::IO, aq::ArrayQuantizer{I,T,N}) where {I,T,N} = begin
+Base.show(io::IO, aq::ArrayQuantizer{U,T,N}) where {U,T,N} = begin
     m = length(aq.codebook)
     qstr = ifelse(m==1, "quantizer", "quantizers")
-    print(io, "ArrayQuantizer{$I,$T,$N}, $m $qstr, $(aq.k) codes")
+    print(io, "ArrayQuantizer{$U,$T,$N}, $m $qstr, $(aq.k) codes")
 end
 
 
@@ -56,16 +56,16 @@ _build_sampling_quantizer(aa::AbstractVector{T}, k::Int, m::Int) where {T}= begi
     # Get quantized (i.e. key) type
     n = length(aa)
     k = min(k, n)
-    I = _calculate_quantized_type(k)
+    U = _calculate_quantized_type(k)
 
     # Calculate codebook
     d = floor(Int, n/k)
-    codes = Dict{I, Vector{T}}()
+    codes = Dict{U, Vector{T}}()
     @inbounds for i in 1:k
-        push!(codes, I(i-1)=>rand(aa[d*(i-1)+1:d*i], 1))  # randomly sample
+        push!(codes, U(i-1)=>rand(aa[d*(i-1)+1:d*i], 1))  # randomly sample
     end
     #if k*d < n
-    #    push!(codes, I(k-1)=>rand(aa[k*d+1:n], 1))  # last elements
+    #    push!(codes, U(k-1)=>rand(aa[k*d+1:n], 1))  # last elements
     #end
     return ArrayQuantizer(size(aa), [codes], k)
 end
@@ -77,18 +77,18 @@ _build_sampling_quantizer(aa::AbstractMatrix{T}, k::Int, m::Int) where {T}= begi
     D = size(aa, 1)                  # number of rows (variables)
     k = min(k, n)                    # number of codes for aquantizer
     m = min(m, size(aa,1))           # number of quantizers
-    I = _calculate_quantized_type(k) # type of codes
+    U = _calculate_quantized_type(k) # type of codes
 
     # Calculate codebook
     cs = floor(Int, n/k)  # column step
     rs = floor(Int, D/m)  # row step
-    cbook = Vector{Dict{I, Vector{T}}}(undef, m)
+    cbook = Vector{Dict{U, Vector{T}}}(undef, m)
     @inbounds for j in 1:m
-        codes = Dict{I, Vector{T}}()
+        codes = Dict{U, Vector{T}}()
         rr = rs*(j-1)+1 : rs*j  # row range
         for i in 1:k
             cr = cs*(i-1)+1 : cs*i # column range
-            push!(codes, I(i-1)=>aa[rr, rand(cr)])  # randomly sample
+            push!(codes, U(i-1)=>aa[rr, rand(cr)])  # randomly sample
         end
         cbook[j] = codes
     end
@@ -98,14 +98,14 @@ end
 
 # Quantization methods
 # TODO Reduce to matrix form, if possible
-function quantize(aq::ArrayQuantizer{I,T,1}, aa::AbstractVector{T}) where {I,T}
+function quantize(aq::ArrayQuantizer{U,T,1}, aa::AbstractVector{T}) where {U,T}
     @assert aq.dims == size(aa) "ArrayQuantizer dimension mismatch"
-    qa = Vector{I}(undef, aq.dims...)
+    qa = Vector{U}(undef, aq.dims...)
     cbook = codebook(aq)
 
     @inbounds for i in 1:length(aa)
         min_dist = Inf
-        min_key = zero(I)
+        min_key = zero(U)
         for (k, v) in cbook
             dist = (aa[i] - v[1])^2
             dist < min_dist && (min_dist = dist; min_key=k)
@@ -115,18 +115,18 @@ function quantize(aq::ArrayQuantizer{I,T,1}, aa::AbstractVector{T}) where {I,T}
     return qa
 end
 
-function quantize(aq::ArrayQuantizer{I,T,2}, aa::AbstractMatrix{T}) where {I,T}
+function quantize(aq::ArrayQuantizer{U,T,2}, aa::AbstractMatrix{T}) where {U,T}
     @assert aq.dims == size(aa) "ArrayQuantizer dimension mismatch"
     cbook = codebook(aq)
     D, n = aq.dims
     m = length(cbook)
     rs = floor(Int, D/m)  # row step
-    qa = Matrix{I}(undef, m, n)
+    qa = Matrix{U}(undef, m, n)
     @inbounds for i in 1:m
         rr = rs*(i-1)+1 : rs*i  # row range
         for j in 1:n
             min_dist = Inf
-            min_key = zero(I)
+            min_key = zero(U)
             for (k, v) in cbook[i]
                 dist = sum((aa[rr,j] .- v).^2)
                 dist < min_dist && (min_dist = dist; min_key=k)
