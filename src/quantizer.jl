@@ -1,20 +1,20 @@
-struct ArrayQuantizer{U,T,N}
-    dims::NTuple{N, Int}              # original array size
-    codebooks::Vector{CodeBook{U,T}}  # codebooks
-    k::Int                            # number of codes/quantizer
+struct ArrayQuantizer{U,D,T,N}
+    dims::NTuple{N, Int}                # original array size
+    codebooks::Vector{CodeBook{U,D,T}}  # codebooks
+    k::Int                              # number of codes/quantizer
 end
 
 
 # Access codebooks
-codebooks(aq::ArrayQuantizer{U,T,1}) where {U,T} = aq.codebooks[1]
-codebooks(aq::ArrayQuantizer{U,T,2}) where {U,T} = aq.codebooks
+codebooks(aq::ArrayQuantizer{U,D,T,1}) where {U,D,T} = aq.codebooks[1]
+codebooks(aq::ArrayQuantizer{U,D,T,2}) where {U,D,T} = aq.codebooks
 
 
 # show methods
-Base.show(io::IO, aq::ArrayQuantizer{U,T,N}) where {U,T,N} = begin
+Base.show(io::IO, aq::ArrayQuantizer{U,D,T,N}) where {U,D,T,N} = begin
     m = length(aq.codebooks)
     qstr = ifelse(m==1, "quantizer", "quantizers")
-    print(io, "ArrayQuantizer{$U,$T,$N}, $m $qstr, $(aq.k) codes")
+    print(io, "ArrayQuantizer{$U,$D,$T,$N}, $m $qstr, $(aq.k) codes")
 end
 
 
@@ -39,20 +39,25 @@ end
 function build_quantizer(aa::AbstractMatrix{T};
                          k::Int=DEFAULT_K,
                          m::Int=DEFAULT_M,
-                         method::Symbol=DEFAULT_METHOD) where {T}
+                         method::Symbol=DEFAULT_METHOD,
+                         distance::Distances.PreMetric=DEFAULT_DISTANCE
+                        ) where {T}
     # Get quantized (i.e. key) type
-    n = size(aa, 2)                  # number of columns (samples)
-    D = size(aa, 1)                  # number of rows (variables)
-    k = min(k, n)                    # number of codes for a quantizer
-    m = min(m, size(aa,1))           # number of quantizers
+    ncols = size(aa, 2)              # number of columns (samples)
+    nrows = size(aa, 1)              # number of rows (variables)
+    k = min(k, ncols)                # number of codes for a quantizer
+    m = min(m, nrows)                # number of quantizers
     U = quantized_eltype(k)          # type of codes
+    D = typeof(distance)
 
     # Calculate codebooks
-    rs = floor(Int, D/m)  # row step
-    cbooks = Vector{CodeBook{U,T}}(undef, m)
+    rs = floor(Int, nrows/m)  # row step
+    cbooks = Vector{CodeBook{U,D,T}}(undef, m)
     @inbounds @simd for i in 1:m
         rr = rs*(i-1)+1 : rs*i  # row range
-        cbooks[i] = build_codebook(aa[rr,:], k, U, method=method)
+        cbooks[i] = build_codebook(aa[rr,:], k, U,
+                                   method=method,
+                                   distance=distance)
     end
     return ArrayQuantizer(size(aa), cbooks, k)
 end
@@ -60,35 +65,33 @@ end
 function build_quantizer(aa::AbstractVector{T};
                          k::Int=DEFAULT_K,
                          m::Int=DEFAULT_M,
-                         method::Symbol=DEFAULT_METHOD) where {T}
-    q = build_quantizer(aa', k=k, m=m, method=method)
+                         method::Symbol=DEFAULT_METHOD,
+                         distance::Distances.PreMetric=DEFAULT_DISTANCE
+                        ) where {T}
+    q = build_quantizer(aa', k=k, m=m, method=method, distance=distance)
     return ArrayQuantizer(size(aa), codebooks(q), k)
 end
 
 
 # Quantization methods
-function quantize(aq::ArrayQuantizer{U,T,2},
-                  aa::AbstractMatrix{T};
-                  distance=Distances.Euclidean()) where {U,T}
+function quantize(aq::ArrayQuantizer{U,D,T,2}, aa::AbstractMatrix{T}) where {U,D,T}
     @assert aq.dims == size(aa) "Quantized array needs to have dims=$(aq.dims)."
     cbooks = codebooks(aq)
-    D, n = aq.dims
+    nrows, ncols = aq.dims
     m = length(cbooks)
-    rs = floor(Int, D/m)  # row step
-    qa = Matrix{U}(undef, m, n)
+    rs = floor(Int, nrows/m)  # row step
+    qa = Matrix{U}(undef, m, ncols)
     @inbounds @simd for i in 1:m
         rr = rs*(i-1)+1 : rs*i  # row range
-        qa[i,:] = infer_codes(cbooks[i], aa[rr,:], distance=distance)
+        qa[i,:] = infer_codes(cbooks[i], aa[rr,:])
     end
     return qa
 end
 
-function quantize(aq::ArrayQuantizer{U,T,1},
-                  aa::AbstractVector{T};
-                  distance=Distances.Euclidean()) where {U,T}
+function quantize(aq::ArrayQuantizer{U,D,T,1}, aa::AbstractVector{T}) where {U,D,T}
     @assert aq.dims == size(aa) "Quantized array needs to have dims=$(aq.dims)."
     aat = aa'  # use transpose as a single row matrix and quantize that
     aqt = ArrayQuantizer(size(aat), aq.codebooks, aq.k)
-    qat = quantize(aqt, aat, distance=distance)
+    qat = quantize(aqt, aat)
     return vec(qat)  # return to vector form
 end
