@@ -1,6 +1,6 @@
-struct QuantizedArray{U<:Unsigned, T, N} <: AbstractArray{T,N}
-    data::Array{U, N}                       # compressed data
-    quantizer::ArrayQuantizer{U,T,N}        # codebook: vector prototypes
+struct QuantizedArray{U<:Unsigned,T,N} <: AbstractArray{T,N}
+    data::Array{U,N}
+    quantizer::ArrayQuantizer{U,T,N}
 end
 
 
@@ -46,27 +46,27 @@ Base.IndexStyle(::Type{<:QuantizedArray}) = IndexLinear()
 # Indexing interface: getindex, setindex!
 @inline function Base.getindex(qa::QuantizedVector, i::Int)
     @boundscheck checkbounds(qa.data, i)
-    qkey = getindex(qa.data, i)  # get quantization code
-    cb = codebook(qa.quantizer)  # get codebook
-    return cb[qkey][1]           # get quantized value
+    qkey = getindex(qa.data, i)   # get quantization code
+    cb = codebooks(qa.quantizer)  # get codebooks
+    return cb[qkey][1]            # get quantized value
 end
 
 @inline function Base.getindex(qa::QuantizedMatrix, i::Int)
-    cbook = codebook(quantizer(qa))
-    m = length(cbook)
+    cbooks = codebooks(quantizer(qa))
+    m = length(cbooks)
     D, n = size(qa)
     iq, ii = _quantized_indices(Int(D/m), I...)  # quantized index, partial index
     qkey = getindex(qa.data, iq)  # get quantization code
-    return cbook[iq][qkey][ii]    # get quantized value
+    return cbooks[iq][qkey][ii]    # get quantized value
 end
 
 @inline function Base.getindex(qa::QuantizedMatrix, i::Int, j::Int)
-    cbook = codebook(quantizer(qa))
-    m = length(cbook)
+    cbooks = codebooks(quantizer(qa))
+    m = length(cbooks)
     D, n = size(qa)
     iq, ii = _quantized_indices(Int(D/m), i, j)  # quantized index, partial index
     qkey = getindex(qa.data, iq, j)  # get quantization code
-    return cbook[iq][qkey][ii]          # get quantized value
+    return cbooks[iq][qkey][ii]          # get quantized value
 end
 
 function _quantized_indices(step::Int, I::Vararg{Int,N}) where {N}

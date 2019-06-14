@@ -32,16 +32,18 @@ QuantizedArrays.jl - array quantization and compression.
 """
 module QuantizedArrays
 
-export QuantizedVector,
+using Distances
+
+export QuantizedArray,
+       QuantizedVector,
        QuantizedMatrix,
-       QuantizedArray,
-       build_quantizer,
-       quantize,
-       quantizer,
-       codebook
+       ArrayQuantizer,
+       CodeBook,
+       quantize
 
 include("defaults.jl")
-include("quantize.jl")
+include("codebook.jl")
+include("quantizer.jl")
 include("interface.jl")
 
 end # module
