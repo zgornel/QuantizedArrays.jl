@@ -6,7 +6,6 @@ end
 
 # Aliases
 const QuantizedVector{U,T} = QuantizedArray{U,T,1}
-
 const QuantizedMatrix{U,T} = QuantizedArray{U,T,2}
 
 
@@ -29,18 +28,11 @@ function QuantizedArray(aa::AbstractArray{T,N};
 end
 
 
-# Get quantizer function
-quantizer(qa::QuantizedArray) = qa.quantizer
-
-
 # eltype, size, length
 Base.eltype(qa::QuantizedArray{U,T,N}) where {U,T,N} = T
-
 Base.size(qa::QuantizedArray) = qa.quantizer.dims
-
-Base.length(qa::QuantizedArray) = prod(qa.quantizer.dims)
-
 Base.IndexStyle(::Type{<:QuantizedArray}) = IndexLinear()
+quantizer(qa::QuantizedArray) = qa.quantizer
 
 
 # Indexing interface: getindex, setindex!

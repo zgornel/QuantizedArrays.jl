@@ -50,9 +50,9 @@ function build_quantizer(aa::AbstractMatrix{T};
     # Calculate codebooks
     rs = floor(Int, D/m)  # row step
     cbooks = Vector{CodeBook{U,T}}(undef, m)
-    @inbounds for j in 1:m
-        rr = rs*(j-1)+1 : rs*j  # row range
-        cbooks[j] = build_codebook(aa[rr,:], k, U, method=method)
+    @inbounds @simd for i in 1:m
+        rr = rs*(i-1)+1 : rs*i  # row range
+        cbooks[i] = build_codebook(aa[rr,:], k, U, method=method)
     end
     return ArrayQuantizer(size(aa), cbooks, k)
 end
@@ -76,7 +76,7 @@ function quantize(aq::ArrayQuantizer{U,T,2},
     m = length(cbooks)
     rs = floor(Int, D/m)  # row step
     qa = Matrix{U}(undef, m, n)
-    @inbounds for i in 1:m
+    @inbounds @simd for i in 1:m
         rr = rs*(i-1)+1 : rs*i  # row range
         qa[i,:] = infer_codes(cbooks[i], aa[rr,:], distance=distance)
     end
