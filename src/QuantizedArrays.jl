@@ -32,7 +32,8 @@ QuantizedArrays.jl - array quantization and compression.
 """
 module QuantizedArrays
 
-using Distances
+using Distances,
+      Clustering
 
 export QuantizedArray,
        QuantizedVector,
