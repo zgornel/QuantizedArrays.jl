@@ -51,31 +51,11 @@ function build_quantizer(aa::AbstractArray{T,N};
 end
 
 
-#TODO Reduce to matrix case i.e. ArrayQuantizer(size(aa), codebook(ArrayQuantizer(aa'),k,m),k)
-_build_sampling_quantizer(aa::AbstractVector{T}, k::Int, m::Int) where {T}= begin
-    # Get quantized (i.e. key) type
-    n = length(aa)
-    k = min(k, n)
-    U = quantized_eltype(k)
-
-    # Calculate codebook
-    d = floor(Int, n/k)
-    codes = Dict{U, Vector{T}}()
-    @inbounds for i in 1:k
-        push!(codes, U(i-1)=>rand(aa[d*(i-1)+1:d*i], 1))  # randomly sample
-    end
-    #if k*d < n
-    #    push!(codes, U(k-1)=>rand(aa[k*d+1:n], 1))  # last elements
-    #end
-    return ArrayQuantizer(size(aa), [codes], k)
-end
-
-
 _build_sampling_quantizer(aa::AbstractMatrix{T}, k::Int, m::Int) where {T}= begin
     # Get quantized (i.e. key) type
     n = size(aa, 2)                  # number of columns (samples)
     D = size(aa, 1)                  # number of rows (variables)
-    k = min(k, n)                    # number of codes for aquantizer
+    k = min(k, n)                    # number of codes for a quantizer
     m = min(m, size(aa,1))           # number of quantizers
     U = quantized_eltype(k)          # type of codes
 
@@ -95,28 +75,15 @@ _build_sampling_quantizer(aa::AbstractMatrix{T}, k::Int, m::Int) where {T}= begi
     return ArrayQuantizer(size(aa), cbook, k)
 end
 
-
-# Quantization methods
-# TODO Reduce to matrix form, if possible
-function quantize(aq::ArrayQuantizer{U,T,1}, aa::AbstractVector{T}) where {U,T}
-    @assert aq.dims == size(aa) "ArrayQuantizer dimension mismatch"
-    qa = Vector{U}(undef, aq.dims...)
-    cbook = codebook(aq)
-
-    @inbounds for i in 1:length(aa)
-        min_dist = Inf
-        min_key = zero(U)
-        for (k, v) in cbook
-            dist = (aa[i] - v[1])^2
-            dist < min_dist && (min_dist = dist; min_key=k)
-        end
-        qa[i] = min_key
-    end
-    return qa
+_build_sampling_quantizer(aa::AbstractVector{T}, k::Int, m::Int) where {T}= begin
+    q = _build_sampling_quantizer(aa', k, m)
+    return ArrayQuantizer(size(aa), codebook(q), k)
 end
 
+
+# Quantization methods
 function quantize(aq::ArrayQuantizer{U,T,2}, aa::AbstractMatrix{T}) where {U,T}
-    @assert aq.dims == size(aa) "ArrayQuantizer dimension mismatch"
+    @assert aq.dims == size(aa) "Quantized array needs to have dims=$(aq.dims)."
     cbook = codebook(aq)
     D, n = aq.dims
     m = length(cbook)
@@ -135,4 +102,12 @@ function quantize(aq::ArrayQuantizer{U,T,2}, aa::AbstractMatrix{T}) where {U,T}
         end
     end
     return qa
+end
+
+function quantize(aq::ArrayQuantizer{U,T,1}, aa::AbstractVector{T}) where {U,T}
+    @assert aq.dims == size(aa) "Quantized array needs to have dims=$(aq.dims)."
+    aat = aa'
+    aqt = ArrayQuantizer(size(aat), aq.codebook, aq.k)
+    qat = quantize(aqt, aat)
+    return vec(qat)
 end
