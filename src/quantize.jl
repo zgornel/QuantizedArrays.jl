@@ -1,13 +1,38 @@
-#TODO(Corneliu)
-
 struct ArrayQuantizer{U,T,N}
     dims::NTuple{N, Int}                    # original array size
     codebook::Vector{Dict{U, Vector{T}}}    # codes
     k::Int                                  # number of codes/quantizer
 end
 
+
 codebook(aq::ArrayQuantizer{U,T,1}) where {U,T} = aq.codebook[1]
+
 codebook(aq::ArrayQuantizer{U,T,2}) where {U,T} = aq.codebook
+
+
+# show methods
+Base.show(io::IO, aq::ArrayQuantizer{U,T,N}) where {U,T,N} = begin
+    m = length(aq.codebook)
+    qstr = ifelse(m==1, "quantizer", "quantizers")
+    print(io, "ArrayQuantizer{$U,$T,$N}, $m $qstr, $(aq.k) codes")
+end
+
+
+quantized_eltype(k::Int) = begin
+    b = clamp(log2(k), 1, MAX_BITS)
+    minbits = 1024
+    local mintype
+    for (nbits, utype) in BITS_TO_TYPE
+        if b <= nbits && nbits < minbits
+            minbits = nbits
+            mintype = utype
+        end
+    end
+    if minbits > MAX_BITS
+        @error "Number is too large to fit in $MAX_BITS bits."
+    end
+    return mintype
+end
 
 
 # Quantizer building methods
@@ -25,38 +50,13 @@ function build_quantizer(aa::AbstractArray{T,N};
     return quantizer
 end
 
-# show methods
-Base.show(io::IO, aq::ArrayQuantizer{U,T,N}) where {U,T,N} = begin
-    m = length(aq.codebook)
-    qstr = ifelse(m==1, "quantizer", "quantizers")
-    print(io, "ArrayQuantizer{$U,$T,$N}, $m $qstr, $(aq.k) codes")
-end
-
-
-#TODO(Corneliu) implement this
-_calculate_quantized_type(k::Int) = begin
-    b = clamp(log2(k), 1, MAX_BITS)
-    minbits = 1024
-    local mintype
-    for (nbits, utype) in BITS_TO_TYPE
-        if b <= nbits && nbits < minbits
-            minbits = nbits
-            mintype = utype
-        end
-    end
-    if minbits > MAX_BITS
-        @error "Number is too large to fit in $MAX_BITS bits."
-    end
-    return mintype
-end
-
 
 #TODO Reduce to matrix case i.e. ArrayQuantizer(size(aa), codebook(ArrayQuantizer(aa'),k,m),k)
 _build_sampling_quantizer(aa::AbstractVector{T}, k::Int, m::Int) where {T}= begin
     # Get quantized (i.e. key) type
     n = length(aa)
     k = min(k, n)
-    U = _calculate_quantized_type(k)
+    U = quantized_eltype(k)
 
     # Calculate codebook
     d = floor(Int, n/k)
@@ -77,7 +77,7 @@ _build_sampling_quantizer(aa::AbstractMatrix{T}, k::Int, m::Int) where {T}= begi
     D = size(aa, 1)                  # number of rows (variables)
     k = min(k, n)                    # number of codes for aquantizer
     m = min(m, size(aa,1))           # number of quantizers
-    U = _calculate_quantized_type(k) # type of codes
+    U = quantized_eltype(k)          # type of codes
 
     # Calculate codebook
     cs = floor(Int, n/k)  # column step

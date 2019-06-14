@@ -6,6 +6,7 @@ end
 
 # Aliases
 const QuantizedVector{U,T} = QuantizedArray{U,T,1}
+
 const QuantizedMatrix{U,T} = QuantizedArray{U,T,2}
 
 
@@ -31,17 +32,6 @@ end
 # Get quantizer function
 quantizer(qa::QuantizedArray) = qa.quantizer
 
-# show methods
-# Base.show(io::IO, ::MIME"text/plain", qa::QuantizedVector{U,T}) where {U,T} = begin
-#     print(io, "$(length(qa))-element QuantizedArray{$U,$T,1}")
-#     print(io, "…")
-# end
-#
-# Base.show(io::IO, ::MIME"text/plain", qa::QuantizedMatrix{U,T}) where {U,T} = begin
-#     print(io, "$(qa.quantizer.dims[1])×$(qa.quantizer.dims[2]) QuantizedArray{$U,$T,2}")
-#     print(io, "…")
-# end
-
 
 # eltype, size, length
 Base.eltype(qa::QuantizedArray{U,T,N}) where {U,T,N} = T
@@ -49,15 +39,6 @@ Base.eltype(qa::QuantizedArray{U,T,N}) where {U,T,N} = T
 Base.size(qa::QuantizedArray) = qa.quantizer.dims
 
 Base.length(qa::QuantizedArray) = prod(qa.quantizer.dims)
-
-
-### # Similar methods
-### #TODO(Corneliu) Other `similar` emthods ?
-### function Base.similar(qa::QuantizedArray{U,T,N}) where {U,T,N}
-###     _data = similar(qa.data)
-###     _codebook = similar(qa.codebook)
-###     return QuantizedArray(qa.D, qa.k, qa.m, qa.dims, _data, _codebook)
-### end
 
 Base.IndexStyle(::Type{<:QuantizedArray}) = IndexLinear()
 
@@ -92,3 +73,10 @@ function _quantized_indices(step::Int, I::Vararg{Int,N}) where {N}
     iq, ii = divrem(I[1]-1, step) .+ 1
     return iq, ii
 end
+
+
+Base.setindex!(qa::QuantizedArray, i::Int) =
+    @error "setindex! not supported on QuantizedArrays."
+
+Base.setindex!(qa::QuantizedArray, I::Vararg{Int, N}) where {N}=
+    @error "setindex! not supported on QuantizedArrays."
