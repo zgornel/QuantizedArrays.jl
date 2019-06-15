@@ -47,24 +47,24 @@ end
 @inline function Base.getindex(qa::QuantizedMatrix, i::Int)
     cbooks = codebooks(quantizer(qa))
     m = length(cbooks)
-    nrows = size(qa, 1)
-    iq, ii = _quantized_indices(Int(nrows/m), i)  # quantized index, partial index
-    qkey = getindex(qa.data, iq)  # get quantization code
-    return cbooks[iq][qkey][ii]    # get quantized value
+    col, row, cidx = indices(size(qa, 1), m, i)  # quantized index, partial index
+    qkey = getindex(qa.data, cidx, col)          # get quantization code
+    return cbooks[cidx][qkey][row]               # get quantized value
 end
 
 @inline function Base.getindex(qa::QuantizedMatrix, i::Int, j::Int)
     cbooks = codebooks(quantizer(qa))
     m = length(cbooks)
-    nrows = size(qa, 1)
-    iq, ii = _quantized_indices(Int(nrows/m), i, j)  # quantized index, partial index
-    qkey = getindex(qa.data, iq, j)  # get quantization code
-    return cbooks[iq][qkey][ii]          # get quantized value
+    _, row, cidx = indices(size(qa, 1), m, i)  # quantized index, partial index
+    qkey = getindex(qa.data, cidx, j)          # get quantization code
+    return cbooks[cidx][qkey][row]             # get quantized value
 end
 
-function _quantized_indices(step::Int, I::Vararg{Int,N}) where {N}
-    iq, ii = divrem(I[1]-1, step) .+ 1
-    return iq, ii
+function indices(n::Int, m::Int, I::Vararg{Int,N}) where {N}
+    step = Int(n/m)
+    col, row = divrem(I[1]-1, n) .+ 1          # column, row in uncompressed data
+    cidx, row = divrem(row-1, step) .+ 1       # codebook index, codebook vector row
+    return col, row, cidx
 end
 
 

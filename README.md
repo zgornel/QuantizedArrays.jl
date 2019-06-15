@@ -17,9 +17,9 @@ Pkg.add("QuantizedArrays")
 
 
 ## TODO
-~~ - basic interface for vectors, matrices (w. sampling quantization) ~~
- - extend basic array interface
- - actual quantization (i.e. cluster sub-vectors w. PQ/OPQ/etc.)
+ - ~~basic interface for vectors, matrices (w. sampling quantization)~~
+ - ~~extend basic array interface~~
+ - ~~actual quantization (i.e. cluster sub-vectors w. PQ/OPQ/etc.)~~
  - tests
  - documetation
  - implement higher order tensor interface

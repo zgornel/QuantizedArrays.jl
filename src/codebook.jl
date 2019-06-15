@@ -74,5 +74,7 @@ function _build_kmeans_codebook(aa::AbstractMatrix{T},
                                 code_type::Type{<:Unsigned};
                                 distance::Distances.PreMetric=DEFAULT_DISTANCE
                                ) where {T}
-    @error "Not Implemented yet."
+    codes = Vector{code_type}(1:k)
+    model = kmeans(aa, k, maxiter=30, display=:none)
+    return CodeBook(codes, T.(model.centers), distance=distance)
 end
