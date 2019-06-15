@@ -44,7 +44,7 @@ function build_codebook(aa::AbstractMatrix{T},
                         method::Symbol=DEFAULT_METHOD,
                         distance::Distances.PreMetric=DEFAULT_DISTANCE
                        ) where {T}
-    if method == :sampling
+    if method == :sample
         return _build_sampling_codebook(aa, k, code_type)
     elseif method == :pq
         return _build_kmeans_codebook(aa, k, code_type, distance=distance)
@@ -74,7 +74,7 @@ function _build_kmeans_codebook(aa::AbstractMatrix{T},
                                 code_type::Type{<:Unsigned};
                                 distance::Distances.PreMetric=DEFAULT_DISTANCE
                                ) where {T}
-    codes = Vector{code_type}(1:k)
+    codes = Vector{code_type}(0:k-1)
     model = kmeans(aa, k, maxiter=30, display=:none)
     return CodeBook(codes, T.(model.centers), distance=distance)
 end
