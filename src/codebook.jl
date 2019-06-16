@@ -29,7 +29,7 @@ Base.getindex(cb::CodeBook{U,D,T}, key::U) where {U,D,T} =
 
 
 # Get compressed codes for an input matrix
-function infer_codes(cb::CodeBook{U,D,T}, aa::AbstractMatrix{T}) where {U,D,T}
+function encode(cb::CodeBook{U,D,T}, aa::AbstractMatrix{T}) where {U,D,T}
     dists = pairwise(cb.distance, cb.vectors, aa, dims=2)  # distances between codebook vectors and data
     best_idx = getindex(findmin(dists, dims=1), 2)         # get positions vector of all minima 
     best_idx_cols = vec(getindex.(best_idx, 1))            # get row values from positions

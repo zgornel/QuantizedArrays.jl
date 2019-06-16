@@ -5,17 +5,16 @@ struct ArrayQuantizer{U,D,T,N}
 end
 
 
-# Access codebooks
-codebooks(aq::ArrayQuantizer{U,D,T,1}) where {U,D,T} = aq.codebooks[1]
-codebooks(aq::ArrayQuantizer{U,D,T,2}) where {U,D,T} = aq.codebooks
-
-
 # show methods
 Base.show(io::IO, aq::ArrayQuantizer{U,D,T,N}) where {U,D,T,N} = begin
-    m = length(aq.codebooks)
+    m = length(codebooks(aq))
     qstr = ifelse(m==1, "quantizer", "quantizers")
     print(io, "ArrayQuantizer{$U,$D,$T,$N}, $m $qstr, $(aq.k) codes")
 end
+
+
+# Access codebooks
+codebooks(aq::ArrayQuantizer) = aq.codebooks
 
 
 quantized_eltype(k::Int) = begin
@@ -68,30 +67,31 @@ function build_quantizer(aa::AbstractVector{T};
                          method::Symbol=DEFAULT_METHOD,
                          distance::Distances.PreMetric=DEFAULT_DISTANCE
                         ) where {T}
-    q = build_quantizer(aa', k=k, m=m, method=method, distance=distance)
-    return ArrayQuantizer(size(aa), codebooks(q), k)
+    aq = build_quantizer(aa', k=k, m=m, method=method, distance=distance)
+    return ArrayQuantizer(size(aa), codebooks(aq), k)
 end
 
 
-# Quantization methods
-function quantize(aq::ArrayQuantizer{U,D,T,2}, aa::AbstractMatrix{T}) where {U,D,T}
-    @assert aq.dims == size(aa) "Quantized array needs to have dims=$(aq.dims)."
+# Obtain quantized data
+function quantize_data(aq::ArrayQuantizer{U,D,T,2}, aa::AbstractMatrix{T}) where {U,D,T}
+    nrows, ncols = size(aa)
+    @assert nrows == aq.dims[1] "Quantized matrix needs to have $nrows rows"
     cbooks = codebooks(aq)
-    nrows, ncols = aq.dims
     m = length(cbooks)
     rs = floor(Int, nrows/m)  # row step
     qa = Matrix{U}(undef, m, ncols)
     @inbounds @simd for i in 1:m
         rr = rs*(i-1)+1 : rs*i  # row range
-        qa[i,:] = infer_codes(cbooks[i], aa[rr,:])
+        qa[i,:] = encode(cbooks[i], aa[rr,:])
     end
     return qa
 end
 
-function quantize(aq::ArrayQuantizer{U,D,T,1}, aa::AbstractVector{T}) where {U,D,T}
-    @assert aq.dims == size(aa) "Quantized array needs to have dims=$(aq.dims)."
+function quantize_data(aq::ArrayQuantizer{U,D,T,1}, aa::AbstractVector{T}) where {U,D,T}
+    nrows = aq.dims[1]
+    @assert nrows == length(aa) "Quantized vector needs to have $nrows elements"
     aat = aa'  # use transpose as a single row matrix and quantize that
-    aqt = ArrayQuantizer(size(aat), aq.codebooks, aq.k)
-    qat = quantize(aqt, aat)
+    aqt = ArrayQuantizer(size(aat), codebooks(aq), aq.k)
+    qat = quantize_data(aqt, aat)
     return vec(qat)  # return to vector form
 end

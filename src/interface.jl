@@ -9,23 +9,31 @@ const QuantizedVector{U,D,T} = QuantizedArray{U,D,T,1}
 const QuantizedMatrix{U,D,T} = QuantizedArray{U,D,T,2}
 
 
-# Basic constructor
-function QuantizedArray(aa::AbstractArray{T,N};
-                        k::Int=DEFAULT_K,
-                        m::Int=DEFAULT_M,
-                        method::Symbol=DEFAULT_METHOD,
-                        distance::Distances.PreMetric=DEFAULT_DISTANCE
-                       ) where {T,N}
+# Main outer constructor
+QuantizedArray(aa::AbstractArray{T,N}; kwargs...) where {T,N} =
+    quantize(aa; kwargs...)
+
+
+# Quantize an array based on an external codebook
+function quantize(aa::AbstractArray{T,N};
+                  k::Int=DEFAULT_K,
+                  m::Int=DEFAULT_M,
+                  method::Symbol=DEFAULT_METHOD,
+                  distance::Distances.PreMetric=DEFAULT_DISTANCE) where {T,N}
     @assert N <=2 "Array quantization is supported only for Vectors and Matrices"
     @assert k >= 1 "`k` has to be larger or equal to 1"
     @assert m >= 1 "`m` has to be larger or equal to 1"
-    if N == 2
-        nrows = size(aa, 1)
-        @assert rem(nrows, m) == 0 "`m` has to divide exactly $nrows rows"
-    end
-    quantizer = build_quantizer(aa, k=k, m=m, method=method, distance=distance)
-    qa = quantize(quantizer, aa)
-    return QuantizedArray(qa, quantizer)
+    @assert rem(nvars(aa), m) == 0 "`m` has to divide exactly $(nvars(aa))"
+    aq = build_quantizer(aa, k=k, m=m, method=method, distance=distance)
+    data = quantize_data(aq, aa)
+    return QuantizedArray(data, aq)
+end
+
+function quantize(aq::ArrayQuantizer{U,D,T,N},
+                  aa::AbstractArray{T,N}) where {U,D,T,N}
+    new_aq = ArrayQuantizer(size(aa), codebooks(aq), aq.k)
+    data = quantize_data(new_aq, aa)
+    return QuantizedArray(data, new_aq)
 end
 
 
@@ -33,29 +41,34 @@ end
 Base.eltype(qa::QuantizedArray{U,D,T,N}) where {U,D,T,N} = T
 Base.size(qa::QuantizedArray) = qa.quantizer.dims
 Base.IndexStyle(::Type{<:QuantizedArray}) = IndexLinear()
+
+
+# Access the quantizer
 quantizer(qa::QuantizedArray) = qa.quantizer
 
 
-# Indexing interface: getindex, setindex!
-@inline function Base.getindex(qa::QuantizedVector, i::Int)
-    @boundscheck checkbounds(qa.data, i)
-    qkey = getindex(qa.data, i)   # get quantization code
-    cb = codebooks(qa.quantizer)  # get codebooks
-    return cb[qkey][1]            # get quantized value
-end
+# nvars:
+#   - vectora have a single variable
+#   - matrices have number of rows variables
+nvars(av::AbstractVector) = 1
+nvars(am::AbstractMatrix) = size(am, 1)
+nvars(qv::QuantizedVector) = 1
+nvars(qm::QuantizedMatrix) = size(qm.data, 1)
 
-@inline function Base.getindex(qa::QuantizedMatrix, i::Int)
+
+# Indexing interface: getindex, setindex!
+@inline function Base.getindex(qa::QuantizedArray, i::Int)
     cbooks = codebooks(quantizer(qa))
     m = length(cbooks)
-    col, row, cidx = indices(size(qa, 1), m, i)  # quantized index, partial index
-    qkey = getindex(qa.data, cidx, col)          # get quantization code
+    col, row, cidx = indices(nvars(qa), m, i)    # quantized index, partial index
+    qkey = getindex(qa.data, m*(col-1)+cidx)     # get quantization code
     return cbooks[cidx][qkey][row]               # get quantized value
 end
 
 @inline function Base.getindex(qa::QuantizedMatrix, i::Int, j::Int)
     cbooks = codebooks(quantizer(qa))
     m = length(cbooks)
-    _, row, cidx = indices(size(qa, 1), m, i)  # quantized index, partial index
+    _, row, cidx = indices(nvars(qa), m, i)    # quantized index, partial index
     qkey = getindex(qa.data, cidx, j)          # get quantization code
     return cbooks[cidx][qkey][row]             # get quantized value
 end
@@ -68,8 +81,9 @@ function indices(n::Int, m::Int, I::Vararg{Int,N}) where {N}
 end
 
 
+# setindex! not supported
 Base.setindex!(qa::QuantizedArray, i::Int) =
-    @error "setindex! not supported on QuantizedArrays."
+    @error "setindex! not supported on QuantizedArrays"
 
 Base.setindex!(qa::QuantizedArray, I::Vararg{Int, N}) where {N}=
-    @error "setindex! not supported on QuantizedArrays."
+    @error "setindex! not supported on QuantizedArrays"
