@@ -52,15 +52,13 @@ quantizer(qa::QuantizedArray) = qa.quantizer
 #   - matrices have number of rows variables
 nvars(av::AbstractVector) = 1
 nvars(am::AbstractMatrix) = size(am, 1)
-nvars(qv::QuantizedVector) = 1
-nvars(qm::QuantizedMatrix) = size(qm.data, 1)
 
 
 # Indexing interface: getindex, setindex!
 @inline function Base.getindex(qa::QuantizedArray, i::Int)
     cbooks = codebooks(quantizer(qa))
     m = length(cbooks)
-    col, row, cidx = indices(nvars(qa), m, i)    # quantized index, partial index
+    col, row, cidx = _indices(nvars(qa), m, i)   # get various indexing numbers
     qkey = getindex(qa.data, m*(col-1)+cidx)     # get quantization code
     return cbooks[cidx][qkey][row]               # get quantized value
 end
@@ -68,12 +66,12 @@ end
 @inline function Base.getindex(qa::QuantizedMatrix, i::Int, j::Int)
     cbooks = codebooks(quantizer(qa))
     m = length(cbooks)
-    _, row, cidx = indices(nvars(qa), m, i)    # quantized index, partial index
+    _, row, cidx = _indices(nvars(qa), m, i)   # get various indexing numbers
     qkey = getindex(qa.data, cidx, j)          # get quantization code
     return cbooks[cidx][qkey][row]             # get quantized value
 end
 
-function indices(n::Int, m::Int, I::Vararg{Int,N}) where {N}
+function _indices(n::Int, m::Int, I::Vararg{Int,N}) where {N}
     step = Int(n/m)
     col, row = divrem(I[1]-1, n) .+ 1          # column, row in uncompressed data
     cidx, row = divrem(row-1, step) .+ 1       # codebook index, codebook vector row
