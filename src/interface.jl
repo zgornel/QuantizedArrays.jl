@@ -48,7 +48,7 @@ quantizer(qa::QuantizedArray) = qa.quantizer
 
 
 # nvars:
-#   - vectora have a single variable
+#   - vectors have a single variable
 #   - matrices have number of rows variables
 nvars(av::AbstractVector) = 1
 nvars(am::AbstractMatrix) = size(am, 1)

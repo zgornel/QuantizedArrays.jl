@@ -17,23 +17,6 @@ end
 codebooks(aq::ArrayQuantizer) = aq.codebooks
 
 
-quantized_eltype(k::Int) = begin
-    b = clamp(log2(k), 1, MAX_BITS)
-    minbits = 1024
-    local mintype
-    for (nbits, utype) in BITS_TO_TYPE
-        if b <= nbits && nbits < minbits
-            minbits = nbits
-            mintype = utype
-        end
-    end
-    if minbits > MAX_BITS
-        @error "Number is too large to fit in $MAX_BITS bits."
-    end
-    return mintype
-end
-
-
 # Quantizer building methods
 function build_quantizer(aa::AbstractMatrix{T};
                          k::Int=DEFAULT_K,
@@ -41,23 +24,7 @@ function build_quantizer(aa::AbstractMatrix{T};
                          method::Symbol=DEFAULT_METHOD,
                          distance::Distances.PreMetric=DEFAULT_DISTANCE
                         ) where {T}
-    # Get quantized (i.e. key) type
-    ncols = size(aa, 2)              # number of columns (samples)
-    nrows = size(aa, 1)              # number of rows (variables)
-    k = min(k, ncols)                # number of codes for a quantizer
-    m = min(m, nrows)                # number of quantizers
-    U = quantized_eltype(k)          # type of codes
-    D = typeof(distance)
-
-    # Calculate codebooks
-    rs = floor(Int, nrows/m)  # row step
-    cbooks = Vector{CodeBook{U,D,T}}(undef, m)
-    @inbounds @simd for i in 1:m
-        rr = rs*(i-1)+1 : rs*i  # row range
-        cbooks[i] = build_codebook(aa[rr,:], k, U,
-                                   method=method,
-                                   distance=distance)
-    end
+    cbooks = build_codebooks(aa, k, m, method=method, distance=distance)
     return ArrayQuantizer(size(aa), cbooks, k)
 end
 
