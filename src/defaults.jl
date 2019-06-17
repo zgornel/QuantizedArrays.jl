@@ -2,7 +2,7 @@
 const DEFAULT_K = 256
 const DEFAULT_M = 1
 const DEFAULT_METHOD = :sample
-const DEFAULT_DISTANCE = Distances.Euclidean()
+const DEFAULT_DISTANCE = Distances.SqEuclidean()
 const MAX_BITS = 128
 const BITS_TO_TYPE = Dict(8 => UInt8,
                           16 => UInt16,

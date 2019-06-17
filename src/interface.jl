@@ -31,7 +31,7 @@ end
 
 function quantize(aq::ArrayQuantizer{U,D,T,N},
                   aa::AbstractArray{T,N}) where {U,D,T,N}
-    new_aq = ArrayQuantizer(size(aa), codebooks(aq), aq.k)
+    new_aq = ArrayQuantizer(size(aa), codebooks(aq), aq.k, aq.distance)
     data = quantize_data(new_aq, aa)
     return QuantizedArray(data, new_aq)
 end
