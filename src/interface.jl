@@ -10,16 +10,13 @@ const QuantizedMatrix{U,D,T} = QuantizedArray{U,D,T,2}
 
 
 # Main outer constructor
-QuantizedArray(aa::AbstractArray{T,N}; kwargs...) where {T,N} =
-    quantize(aa; kwargs...)
 
 
-# Quantize an array based on an external codebook
-function quantize(aa::AbstractArray{T,N};
-                  k::Int=DEFAULT_K,
-                  m::Int=DEFAULT_M,
-                  method::Symbol=DEFAULT_METHOD,
-                  distance::Distances.PreMetric=DEFAULT_DISTANCE) where {T,N}
+function QuantizedArray(aa::AbstractArray{T,N};
+                        k::Int=DEFAULT_K,
+                        m::Int=DEFAULT_M,
+                        method::Symbol=DEFAULT_METHOD,
+                        distance::Distances.PreMetric=DEFAULT_DISTANCE) where {T,N}
     @assert N <=2 "Array quantization is supported only for Vectors and Matrices"
     @assert k >= 1 "`k` has to be larger or equal to 1"
     @assert m >= 1 "`m` has to be larger or equal to 1"
@@ -29,12 +26,16 @@ function quantize(aa::AbstractArray{T,N};
     return QuantizedArray(data, aq)
 end
 
+
+# Quantize an array based on an external codebook
 function quantize(aq::ArrayQuantizer{U,D,T,N},
                   aa::AbstractArray{T,N}) where {U,D,T,N}
     new_aq = ArrayQuantizer(size(aa), codebooks(aq), aq.k, aq.distance)
     data = quantize_data(new_aq, aa)
     return QuantizedArray(data, new_aq)
 end
+
+quantize(aa::AbstractArray{T,N}; kwargs...) where {T,N} = quantize(aa; kwargs...)
 
 
 # eltype, size, length
