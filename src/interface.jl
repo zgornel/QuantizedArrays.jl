@@ -10,31 +10,30 @@ const QuantizedMatrix{U,D,T} = QuantizedArray{U,D,T,2}
 
 
 # Main outer constructor
-QuantizedArray(aa::AbstractArray{T,N}; kwargs...) where {T,N} =
-    quantize(aa; kwargs...)
-
-
-# Quantize an array based on an external codebook
-function quantize(aa::AbstractArray{T,N};
-                  k::Int=DEFAULT_K,
-                  m::Int=DEFAULT_M,
-                  method::Symbol=DEFAULT_METHOD,
-                  distance::Distances.PreMetric=DEFAULT_DISTANCE) where {T,N}
+function QuantizedArray(aa::AbstractArray{T,N};
+                        k::Int=DEFAULT_K,
+                        m::Int=DEFAULT_M,
+                        method::Symbol=DEFAULT_METHOD,
+                        distance::Distances.PreMetric=DEFAULT_DISTANCE,
+                        kwargs...) where {T,N}
     @assert N <=2 "Array quantization is supported only for Vectors and Matrices"
     @assert k >= 1 "`k` has to be larger or equal to 1"
     @assert m >= 1 "`m` has to be larger or equal to 1"
     @assert rem(nvars(aa), m) == 0 "`m` has to divide exactly $(nvars(aa))"
-    aq = build_quantizer(aa, k=k, m=m, method=method, distance=distance)
+    aq = build_quantizer(aa, k=k, m=m, method=method, distance=distance; kwargs...)
     data = quantize_data(aq, aa)
     return QuantizedArray(data, aq)
 end
 
-function quantize(aq::ArrayQuantizer{U,D,T,N},
-                  aa::AbstractArray{T,N}) where {U,D,T,N}
-    new_aq = ArrayQuantizer(size(aa), codebooks(aq), aq.k)
+
+# Quantize an array based on an external codebook
+function quantize(aq::ArrayQuantizer{U,D,T,N}, aa::AbstractArray{T,N}) where {U,D,T,N}
+    new_aq = ArrayQuantizer(size(aa), codebooks(aq), aq.k, aq.distance)
     data = quantize_data(new_aq, aa)
     return QuantizedArray(data, new_aq)
 end
+
+quantize(aa::AbstractArray{T,N}; kwargs...) where {T,N} = QuantizedArray(aa; kwargs...)
 
 
 # eltype, size, length
@@ -48,7 +47,7 @@ quantizer(qa::QuantizedArray) = qa.quantizer
 
 
 # nvars:
-#   - vectora have a single variable
+#   - vectors have a single variable
 #   - matrices have number of rows variables
 nvars(av::AbstractVector) = 1
 nvars(am::AbstractMatrix) = size(am, 1)
