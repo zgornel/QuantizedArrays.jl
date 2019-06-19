@@ -45,7 +45,9 @@ export QuantizedArray,
        quantize
 
 include("defaults.jl")
+include("utils.jl")
 include("codebook.jl")
+include("codebook_algorithms.jl")
 include("quantizer.jl")
 include("interface.jl")
 
