@@ -4,13 +4,33 @@ struct CodeBook{U<:Unsigned,T}
     codemap::Dict{U,Int}
 end
 
-# Basic parametric constructor
+
+# Constructors
 CodeBook(codes::Vector{U}, vectors::Matrix{T}) where {U,T} = begin
-    length(codes) == size(vectors, 2) ||
+    length(codes) != size(vectors, 2) &&
         throw(DimensionMismatch("Dimension of codes and vectors are inconsistent"))
     codemap = Dict{U, Int}(c => i for (i,c) in enumerate(codes))
     return CodeBook(codes, vectors, codemap)
 end
+
+CodeBook{U}(vectors::Matrix{T}) where {U,T} = begin
+    k = size(vectors,2)
+    nb = TYPE_TO_BITS[U]
+    nbk = TYPE_TO_BITS[quantized_eltype(k)]
+    nbk > nb && throw(ErrorException("$k vectors cannot be coded in $nb bits."))
+    codes = Vector{U}(0:k-1)
+    codemap = Dict{U, Int}(c => i for (i,c) in enumerate(codes))
+    return CodeBook(codes, vectors, codemap)
+end
+
+CodeBook{U,T}(vectors::Matrix{T2}) where {U,T<:Integer,T2} =
+    CodeBook{U}(round.(T, vectors))
+
+CodeBook{U,T}(vectors::Matrix{T2}) where {U,T<:AbstractFloat,T2} =
+    CodeBook{U}(convert.(T, vectors))
+
+CodeBook(vectors::Matrix{T}) where {T} =
+    CodeBook{quantized_eltype(size(vectors, 2)), T}(vectors)
 
 
 # Show method
@@ -55,89 +75,118 @@ quantized_eltype(k::Int) = begin
 end
 
 
-# Codebook building methods
-function build_codebooks(aa::AbstractMatrix{T},
+# Codebook building algorithms
+# ----------------------------
+function build_codebooks(X::AbstractMatrix{T},
                          k::Int,
                          m::Int;
                          method::Symbol=DEFAULT_METHOD,
-                         distance::Distances.PreMetric=DEFAULT_DISTANCE
-                        ) where {T}
-    nrows, ncols = size(aa)
+                         distance::Distances.PreMetric=DEFAULT_DISTANCE,
+                         kwargs...) where {T}
+    nrows, ncols = size(X)
     k = min(k, ncols)                # number of codes for a quantizer
     m = min(m, nrows)                # number of quantizers
     U = quantized_eltype(k)          # type of codes
-
     if method == :sample
-        return build_sample_codebooks(aa, k, m, U)  # does not use distances
+        return build_sample_codebooks(X, k, m, U)  # does not use distances
     elseif method == :pq
-        return build_pq_codebooks(aa, k, m, U, distance=distance)
+        return build_pq_codebooks(X, k, m, U, distance=distance; kwargs...)
     elseif method == :opq
-        return build_opq_codebooks(aa, k, m, U, distance=distance)
+        return build_opq_codebooks(X, k, m, U, distance=distance; kwargs...)
     else
         @error "Unknown codebook generation method '$(method)'"
     end
 end
 
 
-function build_sample_codebooks(aa::AbstractMatrix{T},
+# Utility function that returns a row ranged based on an iteration index
+@inline rowrange(nrows::Int, m::Int, i::Int) = begin
+    rs = floor(Int, nrows/m)  # row step
+    rr = rs*(i-1)+1 : rs*i    # row range
+    return rr
+end
+
+
+function build_sample_codebooks(X::AbstractMatrix{T},
                                 k::Int,
                                 m::Int,
-                                ctype::Type{U}) where {U,T}
-    nrows, ncols = size(aa)
-    cs = floor(Int, ncols/k)  # column step
-    rs = floor(Int, nrows/m)  # row step
-
+                                ::Type{U}) where {U,T}
+    nrows, ncols = size(X)
     cbooks = Vector{CodeBook{U,T}}(undef, m)
-    @inbounds @simd for i in 1:m
-        rr = rs*(i-1)+1 : rs*i  # row range
-        codes = Vector{U}(0:k-1)
-        vectors = Matrix{T}(aa[rr, sample(1:ncols, k, replace=false)])
-        cbooks[i] = CodeBook(codes, vectors)
+    @inbounds for i in 1:m
+        rr = rowrange(nrows, m, i)
+        vectors = Matrix{T}(X[rr, sample(1:ncols, k, replace=false)])
+        cbooks[i] = CodeBook{U,T}(vectors)
     end
     return cbooks
 end
 
-function build_pq_codebooks(aa::AbstractMatrix{T},
+function build_pq_codebooks(X::AbstractMatrix{T},
                             k::Int,
                             m::Int,
-                            ctype::Type{U};
-                            distance::Distances.PreMetric=DEFAULT_DISTANCE
+                            ::Type{U};
+                            distance::Distances.PreMetric=DEFAULT_DISTANCE,
+                            maxiter::Int=DEFAULT_PQ_MAXITER
                            ) where {U,T}
-    nrows, ncols = size(aa)
-    cs = floor(Int, ncols/k)  # column step
-    rs = floor(Int, nrows/m)  # row step
-
+    nrows = size(X, 1)
     cbooks = Vector{CodeBook{U,T}}(undef, m)
-    @inbounds @simd for i in 1:m
-        rr = rs*(i-1)+1 : rs*i  # row range
-        codes = Vector{U}(0:k-1)
-        model = kmeans(aa[rr, :], k, maxiter=30, init=:kmpp, display=:none)
-        cbooks[i] = CodeBook(codes, T.(model.centers))
+    @inbounds for i in 1:m
+        rr = rowrange(nrows, m, i)
+        model = kmeans(X[rr, :], k,
+                       maxiter=maxiter,
+                       distance=distance,
+                       init=:kmpp,
+                       display=:none)
+        cbooks[i] = CodeBook{U,T}(model.centers)
     end
     return cbooks
 end
 
-function build_opq_codebooks(aa::AbstractMatrix{T},
+function build_opq_codebooks(X::AbstractMatrix{T},
                              k::Int,
                              m::Int,
-                             ctype::Type{U};
-                             distance::Distances.PreMetric=DEFAULT_DISTANCE
+                             ::Type{U};
+                             distance::Distances.PreMetric=DEFAULT_DISTANCE,
+                             maxiter::Int=DEFAULT_OPQ_MAXITER
                             ) where {U,T}
-    nrows, ncols = size(aa)
-    cs = floor(Int, ncols/k)  # column step
-    rs = floor(Int, nrows/m)  # row step
+    # Initialize R
+    nrows, ncols = size(X)
+    R = diagm(0 => ones(T, nrows))
+    X̂ = R' * X
 
-    cbooks = Vector{CodeBook{U,T}}(undef, m)
-    # Initialize R, codebooks, codes
-    # repeat
-    #   Step(1): project the data X̂ = RX
-    #   for i = 1:m
-    #       for j = 1:k update ĉᵐ(j) by the sample mean of x̂ᵐ i.e. subspace cluster centers by projected samples form the subspace
-    #       for any x̂ᵐ update iᵐ(x̂ᵐ) i.e. codes by the subindex of the codeword ĉᵐ that is nearest to x̂ᵐ
-    #   end
-    #   Solve R by
-    #     U,S,V = svd(X*Xq', full=false)
-    #     R = V*U'
-    #until max number of iterations
-    return cbooks
+    # Initialize codebooks, codes
+    codes = fill(zeros(Int, ncols), m)
+    vectors = [X̂[rowrange(nrows, m, i), sample(1:ncols, k, replace=false)]
+               for i in 1:m]
+    cweights   = zeros(Int, k)
+    costs      = zeros(ncols)
+    counts     = zeros(Int, k)
+    unused     = Int[]
+    to_update = zeros(Bool, k)
+    @inbounds for i in 1:m
+        rr = rowrange(nrows, m, i)
+        dists = Distances.pairwise(distance, vectors[i], X̂[rr, :], dims=2)
+        Clustering.update_assignments!(dists, false, codes[i], costs, counts, to_update, unused)
+        X̂[rr,:] .= vectors[i][:, codes[i]]
+    end
+
+    # Run optimization
+    to_update = ones(Bool, k)
+    for _ = 1:maxiter
+        # Update R using orthogonal Procustes closed form solution
+        # and update data rotated data matrix X̂
+        Uₓ,_,Vₓ = svd(X * X̂', full=false)
+        R = Vₓ * Uₓ'
+        X̂ = R * X
+        @inbounds for i in 1:m
+            rr = rowrange(nrows, m, i)
+            # Update subspace cluster centers
+            Clustering.update_centers!(X̂[rr, :], nothing, codes[i], to_update, vectors[i], cweights)
+            # Update subspace data assignments
+            dists = Distances.pairwise(distance, vectors[i], X̂[rr, :], dims=2)
+            Clustering.update_assignments!(dists, false, codes[i], costs, counts, to_update, unused)
+            X̂[rr, :] .= vectors[i][:, codes[i]]
+        end
+    end
+    return map(CodeBook{U,T}, vectors)
 end

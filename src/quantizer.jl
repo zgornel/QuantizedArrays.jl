@@ -24,9 +24,10 @@ function build_quantizer(aa::AbstractMatrix{T};
                          k::Int=DEFAULT_K,
                          m::Int=DEFAULT_M,
                          method::Symbol=DEFAULT_METHOD,
-                         distance::Distances.PreMetric=DEFAULT_DISTANCE
-                        ) where {T}
-    cbooks = build_codebooks(aa, k, m, method=method, distance=distance)
+                         distance::Distances.PreMetric=DEFAULT_DISTANCE,
+                         kwargs...) where {T}
+    cbooks = build_codebooks(aa, k, m, method=method,
+                             distance=distance; kwargs...)
     return ArrayQuantizer(size(aa), cbooks, k, distance)
 end
 
@@ -34,9 +35,10 @@ function build_quantizer(aa::AbstractVector{T};
                          k::Int=DEFAULT_K,
                          m::Int=DEFAULT_M,
                          method::Symbol=DEFAULT_METHOD,
-                         distance::Distances.PreMetric=DEFAULT_DISTANCE
-                        ) where {T}
-    aq = build_quantizer(aa', k=k, m=m, method=method, distance=distance)
+                         distance::Distances.PreMetric=DEFAULT_DISTANCE,
+                         kwargs...) where {T}
+    aq = build_quantizer(aa', k=k, m=m, method=method,
+                         distance=distance; kwargs...)
     return ArrayQuantizer(size(aa), codebooks(aq), k, distance)
 end
 
@@ -47,10 +49,9 @@ function quantize_data(aq::ArrayQuantizer{U,D,T,2}, aa::AbstractMatrix{T}) where
     @assert nrows == aq.dims[1] "Quantized matrix needs to have $nrows rows"
     cbooks = codebooks(aq)
     m = length(cbooks)
-    rs = floor(Int, nrows/m)  # row step
     qa = Matrix{U}(undef, m, ncols)
     @inbounds @simd for i in 1:m
-        rr = rs*(i-1)+1 : rs*i  # row range
+        rr = rowrange(nrows, m, i)
         qa[i,:] = encode(cbooks[i], aa[rr,:], distance=aq.distance)
     end
     return qa

@@ -9,3 +9,6 @@ const BITS_TO_TYPE = Dict(8 => UInt8,
                           32 => UInt32,
                           64 => UInt64,
                           128 => UInt128)
+const TYPE_TO_BITS = Dict(t=>b for (b,t) in BITS_TO_TYPE)
+const DEFAULT_PQ_MAXITER = 25
+const DEFAULT_OPQ_MAXITER = 25

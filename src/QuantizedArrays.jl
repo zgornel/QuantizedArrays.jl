@@ -32,7 +32,8 @@ QuantizedArrays.jl - array quantization and compression.
 """
 module QuantizedArrays
 
-using StatsBase,
+using LinearAlgebra,
+      StatsBase,
       Distances,
       Clustering
 
