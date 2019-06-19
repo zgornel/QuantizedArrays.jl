@@ -57,34 +57,17 @@ function encode(cb::CodeBook{U,T},
 end
 
 
-# Determine code type
-quantized_eltype(k::Int) = begin
-    b = clamp(log2(k), 1, MAX_BITS)
-    minbits = 1024
-    local mintype
-    for (nbits, utype) in BITS_TO_TYPE
-        if b <= nbits && nbits < minbits
-            minbits = nbits
-            mintype = utype
-        end
-    end
-    if minbits > MAX_BITS
-        @error "Number is too large to fit in $MAX_BITS bits."
-    end
-    return mintype
-end
-
 # Codebooks generation entrypoint
 function build_codebooks(X::AbstractMatrix{T},
                          k::Int,
-                         m::Int;
+                         m::Int,
+                         ::Type{U};
                          method::Symbol=DEFAULT_METHOD,
                          distance::Distances.PreMetric=DEFAULT_DISTANCE,
-                         kwargs...) where {T}
+                         kwargs...) where {U,T}
     nrows, ncols = size(X)
     k = min(k, ncols)                # number of codes for a quantizer
     m = min(m, nrows)                # number of quantizers
-    U = quantized_eltype(k)          # type of codes
     if method == :sample
         vectors = sampling_codebooks(X, k, m)  # does not use distances
     elseif method == :pq

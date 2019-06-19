@@ -42,7 +42,9 @@ export QuantizedArray,
        QuantizedMatrix,
        ArrayQuantizer,
        CodeBook,
-       quantize
+       quantize,
+       build_quantizer,
+       build_codebooks
 
 include("defaults.jl")
 include("utils.jl")

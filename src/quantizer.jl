@@ -15,32 +15,36 @@ Base.show(io::IO, aq::ArrayQuantizer{U,D,T,N}) where {U,D,T,N} = begin
 end
 
 
-# Access codebooks
-codebooks(aq::ArrayQuantizer) = aq.codebooks
-
-
-# Quantizer building methods
-function build_quantizer(aa::AbstractMatrix{T};
-                         k::Int=DEFAULT_K,
-                         m::Int=DEFAULT_M,
-                         method::Symbol=DEFAULT_METHOD,
-                         distance::Distances.PreMetric=DEFAULT_DISTANCE,
-                         kwargs...) where {T}
-    cbooks = build_codebooks(aa, k, m, method=method,
+# Constructors
+ArrayQuantizer(aa::AbstractMatrix{T};
+               k::Int=DEFAULT_K,
+               m::Int=DEFAULT_M,
+               method::Symbol=DEFAULT_METHOD,
+               distance::Distances.PreMetric=DEFAULT_DISTANCE,
+               kwargs...) where {T} = begin
+    U = quantized_eltype(k)
+    cbooks = build_codebooks(aa, k, m, U, method=method,
                              distance=distance; kwargs...)
     return ArrayQuantizer(size(aa), cbooks, k, distance)
 end
 
-function build_quantizer(aa::AbstractVector{T};
-                         k::Int=DEFAULT_K,
-                         m::Int=DEFAULT_M,
-                         method::Symbol=DEFAULT_METHOD,
-                         distance::Distances.PreMetric=DEFAULT_DISTANCE,
-                         kwargs...) where {T}
-    aq = build_quantizer(aa', k=k, m=m, method=method,
-                         distance=distance; kwargs...)
+ArrayQuantizer(aa::AbstractVector{T};
+               k::Int=DEFAULT_K,
+               m::Int=DEFAULT_M,
+               method::Symbol=DEFAULT_METHOD,
+               distance::Distances.PreMetric=DEFAULT_DISTANCE,
+               kwargs...) where {T} = begin
+    aq = ArrayQuantizer(aa', k=k, m=m, method=method, distance=distance; kwargs...)
     return ArrayQuantizer(size(aa), codebooks(aq), k, distance)
 end
+
+
+# Quantizer construction function
+build_quantizer(aa::AbstractArray; kwargs...) where{T,N} = ArrayQuantizer(aa; kwargs...)
+
+
+# Access codebooks
+codebooks(aq::ArrayQuantizer) = aq.codebooks
 
 
 # Obtain quantized data

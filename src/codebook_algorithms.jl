@@ -11,6 +11,7 @@ function sampling_codebooks(X::AbstractMatrix{T}, k::Int, m::Int) where {T}
     return cbooks
 end
 
+
 function pq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
                       distance::Distances.PreMetric=DEFAULT_DISTANCE,
                       maxiter::Int=DEFAULT_PQ_MAXITER) where {U,T}
@@ -27,6 +28,7 @@ function pq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
     end
     return cbooks
 end
+
 
 function opq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
                        distance::Distances.PreMetric=DEFAULT_DISTANCE,
