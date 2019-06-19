@@ -40,8 +40,7 @@ function opq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
 
     # Initialize codebooks, codes
     codes = fill(zeros(Int, ncols), m)
-    cbooks = [X̂[rowrange(nrows, m, i), sample(1:ncols, k, replace=false)]
-               for i in 1:m]
+    cbooks = pq_codebooks(X, k, m, distance=distance, maxiter=10)
     cweights   = zeros(Int, k)
     costs      = zeros(ncols)
     counts     = zeros(Int, k)
