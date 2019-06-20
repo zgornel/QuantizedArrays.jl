@@ -6,7 +6,7 @@ function sampling_codebooks(X::AbstractMatrix{T}, k::Int, m::Int) where {T}
     @inbounds for i in 1:m
         rr = rowrange(nrows, m, i)
         vectors = Matrix{T}(X[rr, sample(1:ncols, k, replace=false)])
-        cbooks[i] = CodeBook{U,T}(vectors)
+        cbooks[i] = vectors
     end
     return cbooks
 end
@@ -14,7 +14,7 @@ end
 
 function pq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
                       distance::Distances.PreMetric=DEFAULT_DISTANCE,
-                      maxiter::Int=DEFAULT_PQ_MAXITER) where {U,T}
+                      maxiter::Int=DEFAULT_PQ_MAXITER) where {T}
     nrows = size(X, 1)
     cbooks = Vector{Matrix{T}}(undef, m)
     @inbounds for i in 1:m
@@ -32,20 +32,20 @@ end
 
 function opq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
                        distance::Distances.PreMetric=DEFAULT_DISTANCE,
-                       maxiter::Int=DEFAULT_OPQ_MAXITER) where {U,T}
-    # Initialize R
+                       maxiter::Int=DEFAULT_OPQ_MAXITER) where {T}
+    # Initialize R, rotated data
     nrows, ncols = size(X)
     R = diagm(0 => ones(T, nrows))
-    X̂ = R' * X
+    X̂ = R * X
 
     # Initialize codebooks, codes
-    codes = fill(zeros(Int, ncols), m)
-    cbooks = pq_codebooks(X, k, m, distance=distance, maxiter=10)
     cweights   = zeros(Int, k)
     costs      = zeros(ncols)
     counts     = zeros(Int, k)
     unused     = Int[]
     to_update = zeros(Bool, k)
+    codes = fill(zeros(Int, ncols), m)
+    cbooks = pq_codebooks(X, k, m, distance=distance, maxiter=10)
     @inbounds for i in 1:m
         rr = rowrange(nrows, m, i)
         dists = Distances.pairwise(distance, cbooks[i], X̂[rr, :], dims=2)
@@ -58,8 +58,8 @@ function opq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
     for _ = 1:maxiter
         # Update R using orthogonal Procustes closed form solution
         # and update data rotated data matrix X̂
-        Uₓ,_,Vₓ = svd(X * X̂', full=false)
-        R = Vₓ * Uₓ'
+        U, _, V = svd(X * X̂', full=false)
+        R = V * U'
         X̂ = R * X
         @inbounds for i in 1:m
             rr = rowrange(nrows, m, i)
@@ -73,4 +73,3 @@ function opq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
     end
     return cbooks
 end
-
