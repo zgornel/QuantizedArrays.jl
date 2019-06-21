@@ -1,5 +1,8 @@
-# Codebook building algorithms
-# ----------------------------
+"""
+    sampling_codebooks(X, k, m)
+
+Build `m` codebooks for input matrix `X` by sampling `k` prototype vectors.
+"""
 function sampling_codebooks(X::AbstractMatrix{T}, k::Int, m::Int) where {T}
     nrows, ncols = size(X)
     cbooks = Vector{Matrix{T}}(undef, m)
@@ -12,6 +15,16 @@ function sampling_codebooks(X::AbstractMatrix{T}, k::Int, m::Int) where {T}
 end
 
 
+"""
+    pq_codebooks(X, k, m [;distance=DEFAULT_DISTANCE, maxiter=DEFAULT_PQ_MAXITER])
+
+Build `m` codebooks for input matrix `X` using `k` sub-space centers obtained
+using k-means clustering, the distance `distance` and `maxiter` iterations.
+
+# References:
+  * [Jègou et al. 2011](https://lear.inrialpes.fr/pubs/2011/JDS11/jegou_searching_with_quantization.pdf)
+#
+"""
 function pq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
                       distance::Distances.PreMetric=DEFAULT_DISTANCE,
                       maxiter::Int=DEFAULT_PQ_MAXITER) where {T}
@@ -30,6 +43,16 @@ function pq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
 end
 
 
+"""
+    opq_codebooks(X, k, m [;distance=DEFAULT_DISTANCE, maxiter=DEFAULT_PQ_MAXITER])
+
+Build `m` codebooks for input matrix `X` using `k` sub-space centers obtained
+using 'cartesian' k-means clustering, the distance `distance` and `maxiter` iterations.
+
+# References:
+  * [Ge et al. 2014](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/opq_tr.pdf)
+#
+"""
 function opq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
                        distance::Distances.PreMetric=DEFAULT_DISTANCE,
                        maxiter::Int=DEFAULT_OPQ_MAXITER) where {T}

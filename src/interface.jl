@@ -1,3 +1,13 @@
+"""
+    QuantizedArray{U<:Unsigned,D<:PreMetric,T,N} <: AbstractArray{T,N}
+
+A quantized array. It represents a 'quantized' representation of an original
+array, equivalent to a lossy compressed version.
+
+# Fields
+  * `quantizer::ArrayQuantizer{U,D,T,N}` the quantized of the array
+  * `data::Array{U,N}` the actual compressed representation of the array
+"""
 struct QuantizedArray{U<:Unsigned,D<:Distances.PreMetric,T,N} <: AbstractArray{T,N}
     quantizer::ArrayQuantizer{U,D,T,N}
     data::Array{U,N}
@@ -26,13 +36,38 @@ function QuantizedArray(aa::AbstractArray{T,N};
 end
 
 
-# Quantize an array based on an external codebook
+"""
+    quantize(aq, aa)
+
+Quantize an array `aa` using an array quantizer `aq`.
+"""
 function quantize(aq::ArrayQuantizer{U,D,T,N}, aa::AbstractArray{T,N}) where {U,D,T,N}
     new_aq = ArrayQuantizer(size(aa), codebooks(aq), aq.k, aq.distance)
     data = quantize_data(new_aq, aa)
     return QuantizedArray(new_aq, data)
 end
 
+
+"""
+    quantize(aa; [;kwargs])
+Quantize an array `aa`.
+
+# Arguments
+  * `aa::AbstractArray` input array to be quantized
+
+# Keyword arguments
+  * `k::Int` the number of vector prototypes in each codebook
+  * `m::Int` the number of codebooks
+  * `method::Symbol` the algorithm to be employed for codebook
+generation; possible values are `:sample` (default), `:pq` for
+classical k-means clustering codebooks and `:opq` for 'cartesian'
+k-means clustering codebooks
+  * `distance::PreMetric` the distance to be used in the
+codebook generation methods and data encoding
+
+Other codebook generation algorithm specific keyword arguments
+such as `maxiter::Int` can be specified as well.
+"""
 quantize(aa::AbstractArray{T,N}; kwargs...) where {T,N} = QuantizedArray(aa; kwargs...)
 
 
@@ -42,13 +77,21 @@ Base.size(qa::QuantizedArray) = qa.quantizer.dims
 Base.IndexStyle(::Type{<:QuantizedArray}) = IndexLinear()
 
 
-# Access the quantizer
+"""
+    quantizer(qa)
+
+Access the quantizer field of a quantized array `qa`.
+"""
 quantizer(qa::QuantizedArray) = qa.quantizer
 
 
-# nvars:
-#   - vectors have a single variable
-#   - matrices have number of rows variables
+"""
+    nvars(aa)
+
+Returns the number of variables of an array `aa`. For vectors,
+the value is always `1`, for matrices it is the number of
+rows in the matrix.
+"""
 nvars(av::AbstractVector) = 1
 nvars(am::AbstractMatrix) = size(am, 1)
 

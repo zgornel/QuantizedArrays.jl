@@ -1,12 +1,21 @@
-# Utility function that returns a row ranged based on an iteration index
-@inline rowrange(nrows::Int, m::Int, i::Int) = begin
-    rs = floor(Int, nrows/m)  # row step
+"""
+    rowrange(n, m, i)
+
+Utility function that returns a range based on an iteration index `i`,
+the number of elements `n` and number of ranges `m`.
+"""
+@inline rowrange(n::Int, m::Int, i::Int) = begin
+    rs = floor(Int, n/m)  # row step
     rr = rs*(i-1)+1 : rs*i    # row range
     return rr
 end
 
 
-# Determine code type
+"""
+    quantized_eltype(k)
+
+Determinies the minimum `Unsigned` type that can hold the value `k`.
+"""
 quantized_eltype(k) = begin
     b = clamp(log2(k), 1, MAX_BITS)
     minbits = 1024
