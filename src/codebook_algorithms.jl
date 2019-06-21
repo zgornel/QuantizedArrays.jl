@@ -57,7 +57,7 @@ function opq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
     to_update = ones(Bool, k)
     for _ = 1:maxiter
         # Update R using orthogonal Procustes closed form solution
-        # and update data rotated data matrix X̂
+        # and update rotated data matrix X̂
         U, _, V = svd(X * X̂', full=false)
         R = V * U'
         X̂ = R * X

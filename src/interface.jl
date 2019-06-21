@@ -1,6 +1,6 @@
 struct QuantizedArray{U<:Unsigned,D<:Distances.PreMetric,T,N} <: AbstractArray{T,N}
-    data::Array{U,N}
     quantizer::ArrayQuantizer{U,D,T,N}
+    data::Array{U,N}
 end
 
 
@@ -22,7 +22,7 @@ function QuantizedArray(aa::AbstractArray{T,N};
     @assert rem(nvars(aa), m) == 0 "`m` has to divide exactly $(nvars(aa))"
     aq = build_quantizer(aa, k=k, m=m, method=method, distance=distance; kwargs...)
     data = quantize_data(aq, aa)
-    return QuantizedArray(data, aq)
+    return QuantizedArray(aq, data)
 end
 
 
@@ -30,7 +30,7 @@ end
 function quantize(aq::ArrayQuantizer{U,D,T,N}, aa::AbstractArray{T,N}) where {U,D,T,N}
     new_aq = ArrayQuantizer(size(aa), codebooks(aq), aq.k, aq.distance)
     data = quantize_data(new_aq, aa)
-    return QuantizedArray(data, new_aq)
+    return QuantizedArray(new_aq, data)
 end
 
 quantize(aa::AbstractArray{T,N}; kwargs...) where {T,N} = QuantizedArray(aa; kwargs...)

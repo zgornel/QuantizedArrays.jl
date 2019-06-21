@@ -1,7 +1,13 @@
 module TestQuantizedArrays
 
 using Test
+using InteractiveUtils
+using Distances
+using QuantizedArrays
 
-@test true # TODO(Corneliu) Tests
+include("codebook.jl")
+include("quantizer.jl")
+include("interface.jl")
+include("utils.jl")
 
 end

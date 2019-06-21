@@ -7,7 +7,7 @@ end
 
 
 # Determine code type
-quantized_eltype(k::Int) = begin
+quantized_eltype(k) = begin
     b = clamp(log2(k), 1, MAX_BITS)
     minbits = 1024
     local mintype
