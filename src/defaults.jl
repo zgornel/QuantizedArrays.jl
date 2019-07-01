@@ -9,3 +9,4 @@ const BITS_TO_TYPE = Dict(round(Int, log2(typemax(typ))) => typ
 const TYPE_TO_BITS = Dict(t=>b for (b,t) in BITS_TO_TYPE)
 const DEFAULT_PQ_MAXITER = 25
 const DEFAULT_OPQ_MAXITER = 25
+const DEFAULT_RVQ_MAXITER = 25

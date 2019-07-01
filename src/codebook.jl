@@ -75,6 +75,21 @@ end
 
 
 """
+    decode(codebook, codes)
+
+Returns a partial array reconstruction for using the `codes` and `codebook`.
+"""
+function decode(cb::CodeBook{U,T}, codes::Vector{U}) where {U,T}
+    m, n = size(cb.vectors, 1), length(codes)
+    aa = Matrix{T}(undef, m, n)
+    @inbounds @simd for i in 1:n
+        aa[:,i] = cb[codes[i]]
+    end
+    return aa
+end
+
+
+"""
     build_codebooks(X, k, m, U [;method=DEFAULT_METHOD, distance=DEFAULT_DISTANCE, kwargs])
 
 Generates `m` codebooks of `k` prototypes each for the input matrix `X`
@@ -106,13 +121,15 @@ function build_codebooks(X::AbstractMatrix{T},
                          kwargs...) where {U,T}
     nrows, ncols = size(X)
     k = min(k, ncols-1)              # number of codes for a quantizer
-    m = min(m, nrows)                # number of quantizers
+    m = ifelse(method == :rvq, m, min(m, nrows))  # number of quantizers
     if method == :sample
         vectors = sampling_codebooks(X, k, m)  # does not use distances
     elseif method == :pq
         vectors = pq_codebooks(X, k, m, distance=distance; kwargs...)
     elseif method == :opq
         vectors = opq_codebooks(X, k, m, distance=distance; kwargs...)
+    elseif method == :rvq
+        vectors = rvq_codebooks(X, k, m, distance=distance; kwargs...)
     else
         @error "Unknown codebook generation method '$(method)'"
     end
