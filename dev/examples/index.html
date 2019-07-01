@@ -15,30 +15,30 @@ julia&gt; v = collect(1:10)
  10
 
 julia&gt; qv = quantize(v, k=2)  # quantize by sampling 2 prototypes i.e. values
-10-element QuantizedArray{UInt8,Distances.SqEuclidean,Int64,1}:
+10-element QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,1}:
+ 2
+ 2
+ 2
+ 2
  7
  7
  7
  7
  7
  7
- 7
- 8
- 8
- 8
 
 julia&gt; qv = QuantizedArray(v, k=2)
-10-element QuantizedArray{UInt8,Distances.SqEuclidean,Int64,1}:
-  9
-  9
-  9
-  9
-  9
-  9
-  9
-  9
-  9
- 10
+10-element QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,1}:
+ 2
+ 2
+ 2
+ 2
+ 2
+ 8
+ 8
+ 8
+ 8
+ 8
 
 julia&gt; m = reshape(collect(1:60), (6,10))
 6×10 Array{Int64,2}:
@@ -50,89 +50,89 @@ julia&gt; m = reshape(collect(1:60), (6,10))
  6  12  18  24  30  36  42  48  54  60
 
 julia&gt; qm = quantize(m, k=5, m=2)  # 5 prototypes, 2 codebooks
-6×10 QuantizedArray{UInt8,Distances.SqEuclidean,Int64,2}:
-  1   7   7   7  31  31  31  49  49  55
-  2   8   8   8  32  32  32  50  50  56
-  3   9   9   9  33  33  33  51  51  57
- 10  10  10  28  28  34  46  46  46  58
- 11  11  11  29  29  35  47  47  47  59
- 12  12  12  30  30  36  48  48  48  60
+6×10 QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,2}:
+  1   7   7  25  25  37  37  43  43  43
+  2   8   8  26  26  38  38  44  44  44
+  3   9   9  27  27  39  39  45  45  45
+ 10  10  22  22  28  28  52  52  52  58
+ 11  11  23  23  29  29  53  53  53  59
+ 12  12  24  24  30  30  54  54  54  60
 
 julia&gt; qm = QuantizedArray(m, k=5, m=2)
-6×10 QuantizedArray{UInt8,Distances.SqEuclidean,Int64,2}:
-  1   7  13  13  31  31  37  37  37  37
-  2   8  14  14  32  32  38  38  38  38
-  3   9  15  15  33  33  39  39  39  39
- 16  16  16  22  22  40  40  46  46  58
- 17  17  17  23  23  41  41  47  47  59
- 18  18  18  24  24  42  42  48  48  60</code></pre><p>The compressed representation of the input arrays is stored in the <code>data</code> field and the quantizer in the <code>quantizer</code> field</p><pre><code class="language-julia-repl">julia&gt; qm.data
+6×10 QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,2}:
+ 1  1  19  19  25  25  43  43  55  55
+ 2  2  20  20  26  26  44  44  56  56
+ 3  3  21  21  27  27  45  45  57  57
+ 4  4   4  28  28  28  40  46  52  52
+ 5  5   5  29  29  29  41  47  53  53
+ 6  6   6  30  30  30  42  48  54  54</code></pre><p>The compressed representation of the input arrays is stored in the <code>data</code> field and the quantizer in the <code>quantizer</code> field</p><pre><code class="language-julia-repl">julia&gt; qm.data
 2×10 Array{UInt8,2}:
- 0x04  0x00  0x02  0x02  0x03  0x03  0x01  0x01  0x01  0x01
- 0x01  0x01  0x01  0x04  0x04  0x02  0x02  0x00  0x00  0x03
+ 0x03  0x03  0x00  0x00  0x01  0x01  0x04  0x04  0x02  0x02
+ 0x01  0x01  0x01  0x03  0x03  0x03  0x04  0x00  0x02  0x02
 
 julia&gt; qm.quantizer
-ArrayQuantizer{UInt8,Distances.SqEuclidean,Int64,2}, 2 quantizers, 5 codes</code></pre><p>A new array can be quantized using the quantizers</p><pre><code class="language-julia-repl">julia&gt; quantize(qv.quantizer, rand(1:10, 5))
-5-element QuantizedArray{UInt8,Distances.SqEuclidean,Int64,1}:
-  9
-  9
-  9
-  9
- 10
+OrthogonalQuantizer{UInt8,Distances.SqEuclidean,Int64,2}, 2 quantizers, 5 codes</code></pre><p>A new array can be quantized using the quantizers</p><pre><code class="language-julia-repl">julia&gt; quantize(qv.quantizer, rand(1:10, 5))
+5-element QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,1}:
+ 8
+ 2
+ 2
+ 2
+ 8
 
 julia&gt; quantize(qm.quantizer, rand(1:60, 6, 2))
-6×2 QuantizedArray{UInt8,Distances.SqEuclidean,Int64,2}:
- 13  13
- 14  14
- 15  15
- 40  22
- 41  23
- 42  24</code></pre><p>The <code>:pq</code> (k-means) and <code>:opq</code> (&#39;cartesian&#39; k-means) quantization methods work for arrays with <code>AbstractFloat</code> elements only and return the same result each run.</p><pre><code class="language-julia-repl">julia&gt; quantize(Float32.(v), k=2, method=:pq)
-10-element QuantizedArray{UInt8,Distances.SqEuclidean,Float32,1}:
- 2.5
- 2.5
- 2.5
- 2.5
- 7.5
- 7.5
- 7.5
- 7.5
- 7.5
- 7.5
+6×2 QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,2}:
+ 43  43
+ 44  44
+ 45  45
+ 40  40
+ 41  41
+ 42  42</code></pre><p>The <code>:pq</code> (k-means), <code>:opq</code> (&#39;cartesian&#39; k-means) and <code>:rvq</code> (&#39;residual&#39;) quantization methods work for arrays with <code>AbstractFloat</code> elements only and return the same result each run.</p><pre><code class="language-julia-repl">julia&gt; quantize(Float32.(v), k=2, method=:pq)
+10-element QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Float32,1}:
+ 3.5
+ 3.5
+ 3.5
+ 3.5
+ 3.5
+ 3.5
+ 8.5
+ 8.5
+ 8.5
+ 8.5
 
 julia&gt; quantize(Float32.(m), k=5, m=2, method=:pq)
-6×10 QuantizedArray{UInt8,Distances.SqEuclidean,Float32,2}:
- 4.0   4.0  13.0  22.0  22.0  34.0  34.0  49.0  49.0  49.0
- 5.0   5.0  14.0  23.0  23.0  35.0  35.0  50.0  50.0  50.0
- 6.0   6.0  15.0  24.0  24.0  36.0  36.0  51.0  51.0  51.0
- 4.0  10.0  19.0  19.0  34.0  34.0  34.0  52.0  52.0  52.0
- 5.0  11.0  20.0  20.0  35.0  35.0  35.0  53.0  53.0  53.0
- 6.0  12.0  21.0  21.0  36.0  36.0  36.0  54.0  54.0  54.0</code></pre><p>Indexing can be performed as in regular arrays</p><pre><code class="language-julia-repl">julia&gt; qm[1,1]
+6×10 QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Float32,2}:
+ 4.0   4.0  19.0  19.0  19.0  34.0  34.0  43.0  52.0  52.0
+ 5.0   5.0  20.0  20.0  20.0  35.0  35.0  44.0  53.0  53.0
+ 6.0   6.0  21.0  21.0  21.0  36.0  36.0  45.0  54.0  54.0
+ 4.0  16.0  16.0  16.0  31.0  31.0  43.0  43.0  55.0  55.0
+ 5.0  17.0  17.0  17.0  32.0  32.0  44.0  44.0  56.0  56.0
+ 6.0  18.0  18.0  18.0  33.0  33.0  45.0  45.0  57.0  57.0</code></pre><p>Indexing can be performed as in regular arrays</p><pre><code class="language-julia-repl">julia&gt; qm[1,1]
 1
 
 julia&gt; qm[2,:]
 10-element Array{Int64,1}:
   2
-  8
- 14
- 14
- 32
- 32
- 38
- 38
- 38
- 38
+  2
+ 20
+ 20
+ 26
+ 26
+ 44
+ 44
+ 56
+ 56
 
 julia&gt; qm[1:1,:]
 1×10 Array{Int64,2}:
- 1  7  13  13  31  31  37  37  37  37</code></pre><p>however changing values is not supported</p><pre><code class="language-julia-repl">julia&gt; qm[1,1] = 0
+ 1  1  19  19  25  25  43  43  55  55</code></pre><p>however changing values is not supported</p><pre><code class="language-julia-repl">julia&gt; qm[1,1] = 0
 ┌ Error: setindex! not supported on QuantizedArrays
-└ @ QuantizedArrays ~/build/zgornel/QuantizedArrays.jl/src/interface.jl:129
+└ @ QuantizedArrays ~/build/zgornel/QuantizedArrays.jl/src/interface.jl:146
 0</code></pre><p>The element type of the compressed array representation is dynamically calculated to reflect the number of vector prototypes employed</p><pre><code class="language-julia-repl">julia&gt; m = rand(1, 10_000);
 
 julia&gt; quantize(m, k=256)  # 8 bits are used (UInt8)
-1×10000 QuantizedArray{UInt8,Distances.SqEuclidean,Float64,2}:
- 0.954338  0.785393  0.804946  0.543229  …  0.896668  0.450193  0.945805
+1×10000 QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Float64,2}:
+ 0.758451  0.746461  0.446898  0.0798517  …  0.434205  0.211594  0.451415
 
 julia&gt; quantize(m, k=257)  # 16 bits are used (UInt16)
-1×10000 QuantizedArray{UInt16,Distances.SqEuclidean,Float64,2}:
- 0.952137  0.784799  0.80604  0.538137  …  0.896625  0.447744  0.945805</code></pre><footer><hr/><a class="previous" href="../"><span class="direction">Previous</span><span class="title">Introduction</span></a><a class="next" href="../api/"><span class="direction">Next</span><span class="title">API Reference</span></a></footer></article></body></html>
+1×10000 QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt16,Distances.SqEuclidean,Float64,2}:
+ 0.756918  0.738438  0.442872  0.0816204  …  0.437977  0.208602  0.454929</code></pre><footer><hr/><a class="previous" href="../"><span class="direction">Previous</span><span class="title">Introduction</span></a><a class="next" href="../api/"><span class="direction">Next</span><span class="title">API Reference</span></a></footer></article></body></html>
