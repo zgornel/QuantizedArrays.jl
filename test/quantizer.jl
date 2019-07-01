@@ -2,12 +2,13 @@
 
 m = 2
 k = 2
+Q = QuantizedArrays.OrthogonalQuantization
 for T in [UInt8, UInt16, UInt32, UInt64, Int8, Int16, Int32, Int64,
           Float16, Float32, Float64]
     for mᵢ in 1:2
         X = rand(T[0,1,2,3], m, 10)  # values in 0-3 to keep distances small
         aqm = build_quantizer(X, k=k, m=mᵢ, method=:sample)
-        @test aqm isa ArrayQuantizer{UInt8, Distances.SqEuclidean, T, 2}
+        @test aqm isa ArrayQuantizer{Q, UInt8, Distances.SqEuclidean, T, 2}
         @test length(aqm.codebooks) == mᵢ
         qm = QuantizedArrays.quantize_data(aqm, X)
         @test qm isa Matrix{UInt8}
@@ -15,10 +16,10 @@ for T in [UInt8, UInt16, UInt32, UInt64, Int8, Int16, Int32, Int64,
 
         Xᵥ= rand(T[0,1,2,3,4], 10)
         aqv = build_quantizer(Xᵥ, k=k, m=mᵢ, method=:sample)
-        @test aqv isa ArrayQuantizer{UInt8, Distances.SqEuclidean, T, 1}
+        @test aqv isa ArrayQuantizer{Q, UInt8, Distances.SqEuclidean, T, 1}
         @test length(aqv.codebooks) == 1
         qv = QuantizedArrays.quantize_data(aqv, Xᵥ)
-        @test qv isa Vector{UInt8}
+        @test qv isa Matrix{UInt8}
         @test length(qv) == length(Xᵥ)
     end
 end
@@ -38,11 +39,11 @@ aq = build_quantizer(X, k=k, m=m, method=:sample)
 # The ArrayQuantizer works with any `m`:
 X2 = rand(T, m+1, 100)
 aq2 = ArrayQuantizer(X2, k=k, m=m, method=:sample)
-@test aq2 isa ArrayQuantizer{UInt8, Distances.SqEuclidean, T, 2}
+@test aq2 isa ArrayQuantizer{Q, UInt8, Distances.SqEuclidean, T, 2}
 @test length(aq2.codebooks) == m
 
 aq3 = ArrayQuantizer(X, k=k, m=m+100, method=:sample)
-@test aq3 isa ArrayQuantizer{UInt8, Distances.SqEuclidean, T, 2}
+@test aq3 isa ArrayQuantizer{Q, UInt8, Distances.SqEuclidean, T, 2}
 @test length(aq3.codebooks) == m
 
 end

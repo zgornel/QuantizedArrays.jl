@@ -15,6 +15,8 @@ end
 
 
 # Aliases
+const QuantizedVector{Q,U,D,T} = QuantizedArray{Q,U,D,T,1}
+const QuantizedMatrix{Q,U,D,T} = QuantizedArray{Q,U,D,T,2}
 const OrthogonalQuantizedArray{U,D,T,N} = QuantizedArray{OrthogonalQuantization,U,D,T,N}
 const OrthogonalQuantizedMatrix{U,D,T,N} = QuantizedArray{OrthogonalQuantization,U,D,T,2}
 const AdditiveQuantizedArray{U,D,T,N} = QuantizedArray{AdditiveQuantization,U,D,T,N}

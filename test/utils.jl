@@ -15,4 +15,10 @@
         k = rand(typemin(T):typemax(T))
         @test QuantizedArrays.quantized_eltype(k+1) == T
     end
+
+    # Quantization type
+    for qt in [:sample, :pq, :opq, :rvq]
+        qt == :rvq && @test QuantizedArrays.quantization_type(qt) isa QuantizedArrays.AdditiveQuantization
+        qt != :rvq && @test QuantizedArrays.quantization_type(qt) isa QuantizedArrays.OrthogonalQuantization
+    end
 end

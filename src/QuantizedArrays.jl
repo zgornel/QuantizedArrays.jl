@@ -39,6 +39,8 @@ using LinearAlgebra,
       Clustering
 
 export QuantizedArray,
+       QuantizedVector,
+       QuantizedMatrix,
        ArrayQuantizer,
        CodeBook,
        quantize,

@@ -27,15 +27,16 @@
     @test_throws ErrorException qa[1] = one(T)
     @test_throws ErrorException qa[1,1] = one(T)
 
-    # Test getindex
+    # Test orthogonal reconstruction: getindex
 
     # vector
     truevector = [0, 1, 0, 2, 0]
     codes = [0x00, 0x01, 0x02]
     vectors = [0 1 2]
-    data = [0x00, 0x01, 0x00, 0x02, 0x00]
+    data = [0x00 0x01 0x00 0x02 0x00]
     cb = CodeBook(codes, vectors)
-    aq = ArrayQuantizer(size(truevector), [cb], length(codes), Distances.SqEuclidean())
+    q = QuantizedArrays.OrthogonalQuantization()
+    aq = ArrayQuantizer(q, size(truevector), [cb], length(codes), Distances.SqEuclidean())
     qa = QuantizedArray(aq, data)
     @test qa[:] == truevector
     @test all(qa .== truevector)
@@ -48,7 +49,44 @@
                0 1 2 3]
     data = [0x00 0x01 0x00 0x02 0x00 0x03]
     cb = CodeBook(codes, vectors)
-    aq = ArrayQuantizer(size(truematrix), [cb], length(codes), Distances.SqEuclidean())
+    q = QuantizedArrays.OrthogonalQuantization()
+    aq = ArrayQuantizer(q, size(truematrix), [cb], length(codes), Distances.SqEuclidean())
+    qa = QuantizedArray(aq, data)
+    @test qa[:] == truematrix[:]
+    @test qa[:,:] == truematrix
+    @test all(qa .== truematrix)
+
+    # Test aditive reconstruction: getindex
+
+    # vector
+    truevector = [0, 1, 0, 2, 0] .+ [-1, -1, 1, 1, 2]
+    codes = [0x00, 0x01, 0x02]
+    vectors1 = [0 1 2]
+    vectors2 = [-1 1 2]
+    data = [0x00 0x01 0x00 0x02 0x00;
+            0x00 0x00 0x01 0x01 0x02]
+    cbs = [CodeBook(codes, vectors1), CodeBook(codes, vectors2)]
+    q = QuantizedArrays.AdditiveQuantization()
+    aq = ArrayQuantizer(q, size(truevector), cbs, length(codes), Distances.SqEuclidean())
+    qa = QuantizedArray(aq, data)
+    @test qa[:] == truevector
+    @test all(qa .== truevector)
+
+    # matrix
+    truematrix = [0 1 0 2 0 3;
+                  0 1 0 2 0 3] .+
+                 [ 2  3  1  4  4  1;
+                  -2 -3 -1 -4 -4 -1]
+    codes = [0x00, 0x01, 0x02, 0x03]
+    vectors1 = [0 1 2 3;
+                0 1 2 3]
+    vectors2 = [1  2  3  4
+                -1 -2 -3 -4]
+    data = [0x00 0x01 0x00 0x02 0x00 0x03;
+            0x01 0x02 0x00 0x03 0x03 0x00]
+    cbs = [CodeBook(codes, vectors1), CodeBook(codes, vectors2)]
+    q = QuantizedArrays.AdditiveQuantization()
+    aq = ArrayQuantizer(q, size(truematrix), cbs, length(codes), Distances.SqEuclidean())
     qa = QuantizedArray(aq, data)
     @test qa[:] == truematrix[:]
     @test qa[:,:] == truematrix
