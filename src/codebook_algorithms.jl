@@ -23,7 +23,6 @@ using k-means clustering, the distance `distance` and `maxiter` iterations.
 
 # References:
   * [Jègou et al. 2011](https://lear.inrialpes.fr/pubs/2011/JDS11/jegou_searching_with_quantization.pdf)
-#
 """
 function pq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
                       distance::Distances.PreMetric=DEFAULT_DISTANCE,
@@ -51,7 +50,6 @@ using 'cartesian' k-means clustering, the distance `distance` and `maxiter` iter
 
 # References:
   * [Ge et al. 2014](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/opq_tr.pdf)
-#
 """
 function opq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
                        distance::Distances.PreMetric=DEFAULT_DISTANCE,
@@ -93,6 +91,35 @@ function opq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
             Clustering.update_assignments!(dists, false, codes[i], costs, counts, to_update, unused)
             X̂[rr, :] .= cbooks[i][:, codes[i]]
         end
+    end
+    return cbooks
+end
+
+
+"""
+    rvq_codebooks(X, k, m [;distance=DEFAULT_DISTANCE, maxiter=DEFAULT_RVQ_MAXITER])
+
+Build `m` codebooks for input matrix `X` using `k` layers of residual vector cluster centers,
+obtained using k-means clustering, the distance `distance` and `maxiter` iterations.
+
+# References:
+  * [Chen et al. 2010](https://www.mdpi.com/1424-8220/10/12/11259/htm)
+"""
+function rvq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
+                       distance::Distances.PreMetric=DEFAULT_DISTANCE,
+                       maxiter::Int=DEFAULT_RVQ_MAXITER) where {T}
+    nrows = size(X, 1)
+    cbooks = Vector{Matrix{T}}(undef, m)
+    Xr = copy(X)
+    @inbounds for i in 1:m
+        model = kmeans(Xr, k,
+                       maxiter=maxiter,
+                       distance=distance,
+                       init=:kmpp,
+                       display=:none)
+        cbooks[i] = model.centers
+        codes = model.assignments
+        Xr .-= cbooks[i][:, codes]
     end
     return cbooks
 end

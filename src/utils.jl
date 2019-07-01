@@ -31,3 +31,13 @@ quantized_eltype(k) = begin
     end
     return mintype
 end
+
+
+"""
+    quantization_type(method)
+
+Returns a quantization type based on the quantization method to be employed.
+"""
+quantization_type(method::Symbol) = begin
+    ifelse(method == :rvq, AdditiveQuantization(), OrthogonalQuantization())
+end
