@@ -26,7 +26,7 @@ quantize(qv.quantizer, rand(1:10, 5))
 quantize(qm.quantizer, rand(1:60, 6, 2))
 ```
 
-The `:pq` (k-means) and `:opq` ('cartesian' k-means) quantization methods work for arrays with `AbstractFloat` elements only and return the same result each run.
+The `:pq` (k-means), `:opq` ('cartesian' k-means) and `:rvq` ('residual') quantization methods work for arrays with `AbstractFloat` elements only and return the same result each run.
 ```@repl index
 quantize(Float32.(v), k=2, method=:pq)
 quantize(Float32.(m), k=5, m=2, method=:pq)

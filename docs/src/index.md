@@ -8,9 +8,11 @@ CurrentModule=QuantizedArrays
 
 ## Implemented features
  - basic `AbstractArray` interface for vectors, matrices
- - quantization using random sampling
- - quantization using k-mean clustering ([PQ](https://lear.inrialpes.fr/pubs/2011/JDS11/jegou_searching_with_quantization.pdf))
- - quantization using 'cartesian' k-means clustering ([OPQ](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/opq_tr.pdf))
+ - quantization types implemented:
+     - random sampling
+     - k-mean clustering ([PQ](https://lear.inrialpes.fr/pubs/2011/JDS11/jegou_searching_with_quantization.pdf))
+     - 'cartesian' k-means clustering ([OPQ](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/opq_tr.pdf))
+     - residual quantization ([RVQ](https://www.mdpi.com/1424-8220/10/12/11259/htm))
 
 ## Installation
 
@@ -25,5 +27,10 @@ $ git clone https://github.com/zgornel/QuantizedArrays.jl
 The package can be installed from inside Julia with:
 ```
 using Pkg
+Pkg.add("QuantizedArrays")
+```
+or
+```
 Pkg.add(PackageSpec(url="https://github.com/zgornel/QuantizedArrays.jl", rev="master"))
 ```
+for the latest `master` branch.

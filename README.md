@@ -24,24 +24,24 @@ v = collect(1:10);
 
 # Use 3 quantization levels (always 1 codebook)
 qv = QuantizedArray(v, k=3)
-# 10-element QuantizedArray{UInt8,Distances.SqEuclidean,Int64,1}:
-#  1
-#  1
-#  3
-#  3
-#  3
-#  7
-#  7
-#  7
-#  7
-#  7
+# 10-element QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,1}:
+#   5
+#   5
+#   5
+#   5
+#   5
+#   6
+#   6
+#   6
+#  10
+#  10
 ```
 
- - Matrix quantization
+ - matrix quantization
 ```julia
 using QuantizedArrays
 m = reshape(collect(1:60), (6,10))
-# 6×10 Array{Int64,2}:
+# 6×10 array{int64,2}:
 #  1   7  13  19  25  31  37  43  49  55
 #  2   8  14  20  26  32  38  44  50  56
 #  3   9  15  21  27  33  39  45  51  57
@@ -49,12 +49,12 @@ m = reshape(collect(1:60), (6,10))
 #  5  11  17  23  29  35  41  47  53  59
 #  6  12  18  24  30  36  42  48  54  60
 
-# Use 5 quantization levels (vectors) / codebook and 2 codebooks
+# use 5 quantization levels (vectors) / codebook and 2 codebooks
 qm = QuantizedArray(m, k = 5, m = 2)
-# 6×10 QuantizedArray{UInt8,Distances.SqEuclidean,Int64,2}:
-#   7   7   7  19  25  25  43  43  49  49
-#   8   8   8  20  26  26  44  44  50  50
-#   9   9   9  21  27  27  45  45  51  51
+# 6×10 QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,2}:
+#   7   7  13  13  31  31  43  43  43  55
+#   8   8  14  14  32  32  44  44  44  56
+#   9   9  15  15  33  33  45  45  45  57
 #  10  10  10  28  28  34  40  46  46  46
 #  11  11  11  29  29  35  41  47  47  47
 #  12  12  12  30  30  36  42  48  48  48
