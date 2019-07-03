@@ -120,7 +120,7 @@ function build_codebooks(X::AbstractMatrix{T},
                          distance::Distances.PreMetric=DEFAULT_DISTANCE,
                          kwargs...) where {U,T}
     nrows, ncols = size(X)
-    k = min(k, ncols-1)              # number of codes for a quantizer
+    k = min(k, ncols)              # number of codes for a quantizer
     m = ifelse(method == :rvq, m, min(m, nrows))  # number of quantizers
     if method == :sample
         vectors = sampling_codebooks(X, k, m)  # does not use distances
