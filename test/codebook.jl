@@ -37,5 +37,11 @@ end
 
 #TODO(Corneliu): Functional testing of codebook
 #                generation algorithms i.e. `build_codebooks`
+T = Float32
+U = UInt16
+for method in [:pq, :opq, :rvq]
+    @test QuantizedArrays.build_codebooks(rand(T, 4,10),
+                2, 2, U, method=method) isa Vector{CodeBook{U,T}}
+end
 
 end

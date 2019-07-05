@@ -34,6 +34,7 @@ function QuantizedArray(aa::AbstractArray{T,N};
     @assert k >= 1 "`k` has to be larger or equal to 1"
     @assert m >= 1 "`m` has to be larger or equal to 1"
     method != :rvq && @assert rem(nvars(aa), m) == 0 "`m` has to divide exactly $(nvars(aa))"
+    method != :sample && @assert T<:AbstractFloat "Input array has to have AbstractFloat elements"
     aq = build_quantizer(aa, k=k, m=m, method=method, distance=distance; kwargs...)
     data = quantize_data(aq, aa)
     return QuantizedArray(aq, data)
@@ -132,15 +133,15 @@ end
 
 function _indices(n::Int, m::Int, I::Vararg{Int,N}) where {N}
     step = Int(n/m)
-    col, row = divrem(I[1]-1, n) .+ 1          # column, row in uncompressed data
-    cidx, row = divrem(row-1, step) .+ 1       # codebook index, codebook vector row
+    col, r = divrem(I[1]-1, n) .+ 1          # column, row in uncompressed data
+    cidx, row = divrem(r-1, step) .+ 1       # codebook index, codebook vector row
     return col, row, cidx
 end
 
 
 # setindex! not supported
 Base.setindex!(qa::QuantizedArray, i::Int) =
-    @error "setindex! not supported on QuantizedArrays"
+    throw(ErrorException("setindex! not supported on QuantizedArrays"))
 
 Base.setindex!(qa::QuantizedArray, I::Vararg{Int, N}) where {N}=
-    @error "setindex! not supported on QuantizedArrays"
+    throw(ErrorException("setindex! not supported on QuantizedArrays"))

@@ -9,6 +9,9 @@
     @test_throws AssertionError QuantizedArray(rand(2, 10), k=-1, m=1, method=:sample)
     @test_throws AssertionError QuantizedArray(rand(2, 10), k=2, m=-1, method=:sample)
     @test_throws AssertionError QuantizedArray(rand(3, 10), k=2, m=2, method=:sample)
+    for method in [:pq, :opq, :rvq]
+        @test_throws AssertionError QuantizedArray(rand([1,2,3], 3, 10), k=2, m=2, method=method)
+    end
 
     # Test quantize function
     T = Float32
@@ -91,4 +94,9 @@
     @test qa[:] == truematrix[:]
     @test qa[:,:] == truematrix
     @test all(qa .== truematrix)
+
+    # Setindex tests
+    @test_throws ErrorException qa[1] = 1
+    @test_throws ErrorException qa[1, 1] = 1
+
 end

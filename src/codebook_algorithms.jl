@@ -70,7 +70,7 @@ function opq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
     @inbounds for i in 1:m
         rr = rowrange(nrows, m, i)
         dists = Distances.pairwise(distance, cbooks[i], X̂[rr, :], dims=2)
-        Clustering.update_assignments!(dists, false, codes[i], costs, counts, to_update, unused)
+        Clustering.update_assignments!(dists, true, codes[i], costs, counts, to_update, unused)
         X̂[rr,:] .= cbooks[i][:, codes[i]]
     end
 
