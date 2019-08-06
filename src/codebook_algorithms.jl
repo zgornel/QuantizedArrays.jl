@@ -56,43 +56,45 @@ function opq_codebooks(X::AbstractMatrix{T}, k::Int, m::Int;
                        maxiter::Int=DEFAULT_OPQ_MAXITER) where {T}
     # Initialize R, rotated data
     nrows, ncols = size(X)
+    X̂ = zeros(T, size(X))
     R = diagm(0 => ones(T, nrows))
-    X̂ = R * X
+    Xr = R * X
 
     # Initialize codebooks, codes
     cweights   = zeros(Int, k)
     costs      = zeros(ncols)
     counts     = zeros(Int, k)
     unused     = Int[]
-    to_update = zeros(Bool, k)
+    to_update_z = zeros(Bool, k)
     codes = fill(zeros(Int, ncols), m)
-    cbooks = pq_codebooks(X, k, m, distance=distance, maxiter=10)
+    cbooks = sampling_codebooks(X, k, m)
     @inbounds for i in 1:m
         rr = rowrange(nrows, m, i)
-        dists = Distances.pairwise(distance, cbooks[i], X̂[rr, :], dims=2)
-        Clustering.update_assignments!(dists, true, codes[i], costs, counts, to_update, unused)
+        dists = Distances.pairwise(distance, cbooks[i], Xr[rr, :], dims=2)
+        Clustering.update_assignments!(dists, true, codes[i], costs, counts, to_update_z, unused)
         X̂[rr,:] .= cbooks[i][:, codes[i]]
     end
 
     # Run optimization
-    to_update = ones(Bool, k)
-    for _ = 1:maxiter
+    to_update = fill(ones(Bool, k), m)
+    for it = 1:maxiter
         # Update R using orthogonal Procustes closed form solution
         # and update rotated data matrix X̂
         U, _, V = svd(X * X̂', full=false)
         R = V * U'
-        X̂ = R * X
+        Xr = R * X
         @inbounds for i in 1:m
             rr = rowrange(nrows, m, i)
             # Update subspace cluster centers
-            Clustering.update_centers!(X̂[rr, :], nothing, codes[i], to_update, cbooks[i], cweights)
+            Clustering.update_centers!(Xr[rr, :], nothing, codes[i], to_update[i], cbooks[i], cweights)
             # Update subspace data assignments
-            dists = Distances.pairwise(distance, cbooks[i], X̂[rr, :], dims=2)
-            Clustering.update_assignments!(dists, false, codes[i], costs, counts, to_update, unused)
+            dists = Distances.pairwise(distance, cbooks[i], Xr[rr, :], dims=2)
+            Clustering.update_assignments!(dists, false, codes[i], costs, counts, to_update[i], unused)
             X̂[rr, :] .= cbooks[i][:, codes[i]]
         end
+        @debug "OPQ: Iteration $it, error = $(sum((R'*X̂ .- X).^2)./ncols)"
     end
-    return cbooks
+    return cbooks, R
 end
 
 

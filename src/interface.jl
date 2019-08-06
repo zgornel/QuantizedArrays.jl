@@ -47,7 +47,7 @@ end
 Quantize an array `aa` using an array quantizer `aq`.
 """
 function quantize(aq::ArrayQuantizer{Q,U,D,T,N}, aa::AbstractArray{T,N}) where {Q,U,D,T,N}
-    new_aq = ArrayQuantizer(aq.quantization, size(aa), codebooks(aq), aq.k, aq.distance)
+    new_aq = ArrayQuantizer(aq.quantization, size(aa), codebooks(aq), aq.k, aq.distance, aq.rot)
     data = quantize_data(new_aq, aa)
     return QuantizedArray(new_aq, data)
 end

@@ -39,7 +39,8 @@
     data = [0x00 0x01 0x00 0x02 0x00]
     cb = CodeBook(codes, vectors)
     q = QuantizedArrays.OrthogonalQuantization()
-    aq = ArrayQuantizer(q, size(truevector), [cb], length(codes), Distances.SqEuclidean())
+    rot = diagm(0=>ones(eltype(truevector), length(truevector)))
+    aq = ArrayQuantizer(q, size(truevector), [cb], length(codes), Distances.SqEuclidean(), rot)
     qa = QuantizedArray(aq, data)
     @test qa[:] == truevector
     @test all(qa .== truevector)
@@ -53,7 +54,8 @@
     data = [0x00 0x01 0x00 0x02 0x00 0x03]
     cb = CodeBook(codes, vectors)
     q = QuantizedArrays.OrthogonalQuantization()
-    aq = ArrayQuantizer(q, size(truematrix), [cb], length(codes), Distances.SqEuclidean())
+    rot = diagm(0=>ones(eltype(truematrix), size(truematrix, 1)))
+    aq = ArrayQuantizer(q, size(truematrix), [cb], length(codes), Distances.SqEuclidean(), rot)
     qa = QuantizedArray(aq, data)
     @test qa[:] == truematrix[:]
     @test qa[:,:] == truematrix
@@ -70,7 +72,8 @@
             0x00 0x00 0x01 0x01 0x02]
     cbs = [CodeBook(codes, vectors1), CodeBook(codes, vectors2)]
     q = QuantizedArrays.AdditiveQuantization()
-    aq = ArrayQuantizer(q, size(truevector), cbs, length(codes), Distances.SqEuclidean())
+    rot = diagm(0=>ones(eltype(truevector), length(truevector)))
+    aq = ArrayQuantizer(q, size(truevector), cbs, length(codes), Distances.SqEuclidean(), rot)
     qa = QuantizedArray(aq, data)
     @test qa[:] == truevector
     @test all(qa .== truevector)
@@ -89,7 +92,8 @@
             0x01 0x02 0x00 0x03 0x03 0x00]
     cbs = [CodeBook(codes, vectors1), CodeBook(codes, vectors2)]
     q = QuantizedArrays.AdditiveQuantization()
-    aq = ArrayQuantizer(q, size(truematrix), cbs, length(codes), Distances.SqEuclidean())
+    rot = diagm(0=>ones(eltype(truematrix), size(truematrix, 1)))
+    aq = ArrayQuantizer(q, size(truematrix), cbs, length(codes), Distances.SqEuclidean(), rot)
     qa = QuantizedArray(aq, data)
     @test qa[:] == truematrix[:]
     @test qa[:,:] == truematrix

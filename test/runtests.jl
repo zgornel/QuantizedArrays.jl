@@ -2,6 +2,7 @@ module TestQuantizedArrays
 
 using Test
 using InteractiveUtils
+using LinearAlgebra
 using Distances
 using QuantizedArrays
 
