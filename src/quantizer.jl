@@ -8,6 +8,7 @@ struct OrthogonalQuantization <: AbstractQuantization end
 
 struct AdditiveQuantization <: AbstractQuantization end
 
+
 """
     ArrayQuantizer{Q,U,D,T,N}
 
@@ -20,6 +21,7 @@ of type `T` into a 'quantized' version with elemetns of type `U`.
   * `codebooks::Vector{CodeBook{U,T}}` the codebooks
   * `k::Int` the number of vector prototypes in each codebooks
   * `distance::D` the distance employed
+  * `rot::Matrix{T}` rotation matrix
 """
 struct ArrayQuantizer{Q,U,D,T,N}
     quantization::Q                   # type of quantization
@@ -27,6 +29,7 @@ struct ArrayQuantizer{Q,U,D,T,N}
     codebooks::Vector{CodeBook{U,T}}  # codebooks
     k::Int                            # number of codes/quantizer
     distance::D
+    rot::Matrix{T}
 end
 
 
@@ -55,9 +58,9 @@ ArrayQuantizer(aa::AbstractMatrix{T};
                kwargs...) where {T} = begin
     U = quantized_eltype(k)
     quant = quantization_type(method)
-    cbooks = build_codebooks(aa, k, m, U, method=method,
-                             distance=distance; kwargs...)
-    return ArrayQuantizer(quant, size(aa), cbooks, k, distance)
+    cbooks, rot = build_codebooks(aa, k, m, U, method=method,
+                                  distance=distance; kwargs...)
+    return ArrayQuantizer(quant, size(aa), cbooks, k, distance, rot)
 end
 
 ArrayQuantizer(aa::AbstractVector{T};
@@ -67,7 +70,7 @@ ArrayQuantizer(aa::AbstractVector{T};
                distance::Distances.PreMetric=DEFAULT_DISTANCE,
                kwargs...) where {T} = begin
     aq = ArrayQuantizer(aa', k=k, m=m, method=method, distance=distance; kwargs...)
-    return ArrayQuantizer(aq.quantization, size(aa), codebooks(aq), k, distance)
+    return ArrayQuantizer(aq.quantization, size(aa), codebooks(aq), k, distance, aq.rot)
 end
 
 
@@ -111,9 +114,10 @@ function quantize_data(aq::OrthogonalQuantizer{U,D,T,2}, aa::AbstractMatrix{T}) 
     cbooks = codebooks(aq)
     m = length(cbooks)
     qa = Matrix{U}(undef, m, ncols)
+    _aa = aq.rot * aa
     @inbounds @simd for i in 1:m
         rr = rowrange(nrows, m, i)
-        qa[i,:] = encode(cbooks[i], aa[rr,:], distance=aq.distance)
+        qa[i,:] = encode(cbooks[i], _aa[rr,:], distance=aq.distance)
     end
     return qa
 end
@@ -136,7 +140,7 @@ function quantize_data(aq::ArrayQuantizer{Q,U,D,T,1}, aa::AbstractVector{T}) whe
     nrows = aq.dims[1]
     @assert nrows == length(aa) "Quantized vector needs to have $nrows elements"
     aat = aa'  # use transpose as a single row matrix and quantize that
-    aqt = ArrayQuantizer(aq.quantization, size(aat), codebooks(aq), aq.k, aq.distance)
+    aqt = ArrayQuantizer(aq.quantization, size(aat), codebooks(aq), aq.k, aq.distance, aq.rot)
     qat = quantize_data(aqt, aat)
     return qat
 end

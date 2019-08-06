@@ -122,16 +122,17 @@ function build_codebooks(X::AbstractMatrix{T},
     nrows, ncols = size(X)
     k = min(k, ncols)              # number of codes for a quantizer
     m = ifelse(method == :rvq, m, min(m, nrows))  # number of quantizers
+    R = diagm(0=>ones(T, nrows))
     if method == :sample
         vectors = sampling_codebooks(X, k, m)  # does not use distances
     elseif method == :pq
         vectors = pq_codebooks(X, k, m, distance=distance; kwargs...)
     elseif method == :opq
-        vectors = opq_codebooks(X, k, m, distance=distance; kwargs...)
+        vectors, R = opq_codebooks(X, k, m, distance=distance; kwargs...)
     elseif method == :rvq
         vectors = rvq_codebooks(X, k, m, distance=distance; kwargs...)
     else
         @error "Unknown codebook generation method '$(method)'"
     end
-    return map(CodeBook{U,T}, vectors)
+    return map(CodeBook{U,T}, vectors), R
 end
