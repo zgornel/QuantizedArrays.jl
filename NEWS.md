@@ -1,5 +1,9 @@
 ## QuantizedArrays Release Notes
 
+v0.1.3
+------
+ - Fixes for OPQ
+
 v0.1.2
 ------
  - Bugfixes, test coverage improvements
