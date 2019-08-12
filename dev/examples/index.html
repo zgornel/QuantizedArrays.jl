@@ -16,29 +16,29 @@ julia&gt; v = collect(1:10)
 
 julia&gt; qv = quantize(v, k=2)  # quantize by sampling 2 prototypes i.e. values
 10-element QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,1}:
- 3
- 3
- 3
- 3
- 3
- 7
- 7
- 7
- 7
- 7
+ 6
+ 6
+ 6
+ 6
+ 6
+ 6
+ 6
+ 9
+ 9
+ 9
 
 julia&gt; qv = QuantizedArray(v, k=2)
 10-element QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,1}:
- 5
- 5
- 5
- 5
- 5
- 6
- 6
- 6
- 6
- 6
+ 7
+ 7
+ 7
+ 7
+ 7
+ 7
+ 7
+ 8
+ 8
+ 8
 
 julia&gt; m = reshape(collect(1:60), (6,10))
 6×10 Array{Int64,2}:
@@ -51,86 +51,86 @@ julia&gt; m = reshape(collect(1:60), (6,10))
 
 julia&gt; qm = quantize(m, k=5, m=2)  # 5 prototypes, 2 codebooks
 6×10 QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,2}:
- 19  19  19  19  25  37  37  43  55  55
- 20  20  20  20  26  38  38  44  56  56
- 21  21  21  21  27  39  39  45  57  57
- 10  10  16  16  34  34  46  46  46  58
- 11  11  17  17  35  35  47  47  47  59
- 12  12  18  18  36  36  48  48  48  60
+ 13  13  13  13  25  31  37  37  49  49
+ 14  14  14  14  26  32  38  38  50  50
+ 15  15  15  15  27  33  39  39  51  51
+ 16  16  16  22  28  34  46  46  46  46
+ 17  17  17  23  29  35  47  47  47  47
+ 18  18  18  24  30  36  48  48  48  48
 
 julia&gt; qm = QuantizedArray(m, k=5, m=2)
 6×10 QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,2}:
- 13  13  13  19  19  37  37  43  55  55
- 14  14  14  20  20  38  38  44  56  56
- 15  15  15  21  21  39  39  45  57  57
-  4  10  10  22  28  28  28  52  52  52
-  5  11  11  23  29  29  29  53  53  53
-  6  12  12  24  30  30  30  54  54  54</code></pre><p>The compressed representation of the input arrays is stored in the <code>data</code> field and the quantizer in the <code>quantizer</code> field</p><pre><code class="language-julia-repl">julia&gt; qm.data
+  1   1  19  19  25  31  31  49  49  49
+  2   2  20  20  26  32  32  50  50  50
+  3   3  21  21  27  33  33  51  51  51
+ 10  10  10  28  28  34  40  40  52  52
+ 11  11  11  29  29  35  41  41  53  53
+ 12  12  12  30  30  36  42  42  54  54</code></pre><p>The compressed representation of the input arrays is stored in the <code>data</code> field and the quantizer in the <code>quantizer</code> field</p><pre><code class="language-julia-repl">julia&gt; qm.data
 2×10 Array{UInt8,2}:
- 0x02  0x02  0x02  0x03  0x03  0x00  0x00  0x04  0x01  0x01
- 0x00  0x03  0x03  0x04  0x01  0x01  0x01  0x02  0x02  0x02
+ 0x00  0x00  0x04  0x04  0x01  0x02  0x02  0x03  0x03  0x03
+ 0x03  0x03  0x03  0x01  0x01  0x04  0x00  0x00  0x02  0x02
 
 julia&gt; qm.quantizer
 OrthogonalQuantizer{UInt8,Distances.SqEuclidean,Int64,2}, 2 quantizers, 5 codes</code></pre><p>A new array can be quantized using the quantizers</p><pre><code class="language-julia-repl">julia&gt; quantize(qv.quantizer, rand(1:10, 5))
 5-element QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,1}:
- 6
- 6
- 5
- 5
- 6
+ 8
+ 7
+ 8
+ 7
+ 8
 
 julia&gt; quantize(qm.quantizer, rand(1:60, 6, 2))
 6×2 QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Int64,2}:
- 37  43
- 38  44
- 39  45
- 28  22
- 29  23
- 30  24</code></pre><p>The <code>:pq</code> (k-means), <code>:opq</code> (&#39;cartesian&#39; k-means) and <code>:rvq</code> (&#39;residual&#39;) quantization methods work for arrays with <code>AbstractFloat</code> elements only and return the same result each run.</p><pre><code class="language-julia-repl">julia&gt; quantize(Float32.(v), k=2, method=:pq)
+ 49  49
+ 50  50
+ 51  51
+ 28  28
+ 29  29
+ 30  30</code></pre><p>The <code>:pq</code> (k-means), <code>:opq</code> (&#39;cartesian&#39; k-means) and <code>:rvq</code> (&#39;residual&#39;) quantization methods work for arrays with <code>AbstractFloat</code> elements only and return the same result each run.</p><pre><code class="language-julia-repl">julia&gt; quantize(Float32.(v), k=2, method=:pq)
 10-element QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Float32,1}:
- 3.0
- 3.0
- 3.0
- 3.0
- 3.0
- 8.0
- 8.0
- 8.0
- 8.0
- 8.0
+ 3.5
+ 3.5
+ 3.5
+ 3.5
+ 3.5
+ 3.5
+ 8.5
+ 8.5
+ 8.5
+ 8.5
 
 julia&gt; quantize(Float32.(m), k=5, m=2, method=:pq)
 6×10 QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Float32,2}:
- 4.0  4.0  19.0  19.0  19.0  31.0  40.0  40.0  52.0  52.0
- 5.0  5.0  20.0  20.0  20.0  32.0  41.0  41.0  53.0  53.0
- 6.0  6.0  21.0  21.0  21.0  33.0  42.0  42.0  54.0  54.0
- 7.0  7.0  19.0  19.0  28.0  37.0  37.0  52.0  52.0  52.0
- 8.0  8.0  20.0  20.0  29.0  38.0  38.0  53.0  53.0  53.0
- 9.0  9.0  21.0  21.0  30.0  39.0  39.0  54.0  54.0  54.0</code></pre><p>Indexing can be performed as in regular arrays</p><pre><code class="language-julia-repl">julia&gt; qm[1,1]
-13
+ 1.0  13.0  13.0  13.0  25.0  37.0  37.0  37.0  52.0  52.0
+ 2.0  14.0  14.0  14.0  26.0  38.0  38.0  38.0  53.0  53.0
+ 3.0  15.0  15.0  15.0  27.0  39.0  39.0  39.0  54.0  54.0
+ 7.0   7.0  16.0  25.0  25.0  40.0  40.0  40.0  55.0  55.0
+ 8.0   8.0  17.0  26.0  26.0  41.0  41.0  41.0  56.0  56.0
+ 9.0   9.0  18.0  27.0  27.0  42.0  42.0  42.0  57.0  57.0</code></pre><p>Indexing can be performed as in regular arrays</p><pre><code class="language-julia-repl">julia&gt; qm[1,1]
+1
 
 julia&gt; qm[2,:]
 10-element Array{Int64,1}:
- 14
- 14
- 14
+  2
+  2
  20
  20
- 38
- 38
- 44
- 56
- 56
+ 26
+ 32
+ 32
+ 50
+ 50
+ 50
 
 julia&gt; qm[1:1,:]
 1×10 Array{Int64,2}:
- 13  13  13  19  19  37  37  43  55  55</code></pre><p>however changing values is not supported</p><pre><code class="language-julia-repl">julia&gt; qm[1,1] = 0
+ 1  1  19  19  25  31  31  49  49  49</code></pre><p>however changing values is not supported</p><pre><code class="language-julia-repl">julia&gt; qm[1,1] = 0
 ERROR: setindex! not supported on QuantizedArrays</code></pre><p>The element type of the compressed array representation is dynamically calculated to reflect the number of vector prototypes employed</p><pre><code class="language-julia-repl">julia&gt; m = rand(1, 10_000);
 
 julia&gt; quantize(m, k=256)  # 8 bits are used (UInt8)
 1×10000 QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt8,Distances.SqEuclidean,Float64,2}:
- 0.511922  0.167916  0.212682  0.0212735  …  0.121298  0.463171  0.511922
+ 0.269212  0.0754572  0.17137  0.23446  …  0.701739  0.807927  0.962115
 
 julia&gt; quantize(m, k=257)  # 16 bits are used (UInt16)
 1×10000 QuantizedArray{QuantizedArrays.OrthogonalQuantization,UInt16,Distances.SqEuclidean,Float64,2}:
- 0.510624  0.168172  0.217815  0.0209606  …  0.121749  0.466991  0.513365</code></pre><footer><hr/><a class="previous" href="../"><span class="direction">Previous</span><span class="title">Introduction</span></a><a class="next" href="../api/"><span class="direction">Next</span><span class="title">API Reference</span></a></footer></article></body></html>
+ 0.272294  0.075432  0.171478  0.232731  …  0.70498  0.811791  0.962378</code></pre><footer><hr/><a class="previous" href="../"><span class="direction">Previous</span><span class="title">Introduction</span></a><a class="next" href="../api/"><span class="direction">Next</span><span class="title">API Reference</span></a></footer></article></body></html>
