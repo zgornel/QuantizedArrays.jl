@@ -67,7 +67,7 @@ function encode(cb::CodeBook{U,T},
                 aa::AbstractMatrix{T};
                 distance::Distances.PreMetric=DEFAULT_DISTANCE
                ) where {U,T}
-    dists = pairwise(distance, cb.vectors, aa, dims=2)  # distances between codebook vectors and data
+    dists = Distances.pairwise(distance, cb.vectors, aa, dims=2)  # distances between codebook vectors and data
     best_idx = getindex(findmin(dists, dims=1), 2)      # get positions vector of all minima
     best_idx_cols = vec(getindex.(best_idx, 1))         # get row values from positions
     return cb.codes[best_idx_cols]                      # get codes corresponding to minima
