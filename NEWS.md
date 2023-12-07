@@ -1,4 +1,7 @@
 ## QuantizedArrays Release Notes
+v0.1.7
+-----
+ - Bugfixes, dependency updates
 
 v0.1.3
 ------
