@@ -27,8 +27,8 @@
     @test QuantizedArrays.nvars(rand(2, 10)) == 2
 
     # Test setindex!
-    @test_throws ErrorException qa[1] = one(T)
-    @test_throws ErrorException qa[1,1] = one(T)
+    @test_throws CanonicalIndexError qa[1] = one(T)
+    @test_throws CanonicalIndexError qa[1,1] = one(T)
 
     # Test orthogonal reconstruction: getindex
 
