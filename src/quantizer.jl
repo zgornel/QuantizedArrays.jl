@@ -92,7 +92,7 @@ codebook generation methods and data encoding
 Other codebook generation algorithm specific keyword arguments
 such as `maxiter::Int` can be specified as well.
 """
-build_quantizer(aa::AbstractArray; kwargs...) where{T,N} = ArrayQuantizer(aa; kwargs...)
+build_quantizer(aa::AbstractArray; kwargs...) = ArrayQuantizer(aa; kwargs...)
 
 
 """
